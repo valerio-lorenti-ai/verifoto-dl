@@ -25,6 +25,24 @@ from src.utils.visualization import plot_prob_distributions, plot_roc_pr, plot_c
 from sklearn.metrics import confusion_matrix
 
 
+def collate_with_metadata(batch):
+    """
+    Custom collate function per gestire metadati con valori None.
+    PyTorch default collate non gestisce dict con None values.
+    """
+    images = torch.stack([item[0] for item in batch])
+    labels = torch.stack([item[1] for item in batch])
+    
+    # Metadati: crea dict di liste invece di lista di dict
+    metadata = {}
+    if len(batch) > 0 and len(batch[0]) > 2:
+        meta_keys = batch[0][2].keys()
+        for key in meta_keys:
+            metadata[key] = [item[2][key] for item in batch]
+    
+    return images, labels, metadata
+
+
 def set_seed(seed: int = 42):
     random.seed(seed)
     np.random.seed(seed)
@@ -74,7 +92,7 @@ def main():
     _, eval_tf = build_transforms(img_size)
 
     test_ds = ImageBinaryDataset(test_df, transform=eval_tf, img_size=img_size)
-    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, collate_fn=collate_with_metadata)
 
     # Load model
     model_name = config.get('model_name', 'efficientnet_b0')

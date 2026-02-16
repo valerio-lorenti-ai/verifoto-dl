@@ -46,6 +46,24 @@ def get_git_commit():
         return "unknown"
 
 
+def collate_with_metadata(batch):
+    """
+    Custom collate function per gestire metadati con valori None.
+    PyTorch default collate non gestisce dict con None values.
+    """
+    images = torch.stack([item[0] for item in batch])
+    labels = torch.stack([item[1] for item in batch])
+    
+    # Metadati: crea dict di liste invece di lista di dict
+    metadata = {}
+    if len(batch) > 0 and len(batch[0]) > 2:
+        meta_keys = batch[0][2].keys()
+        for key in meta_keys:
+            metadata[key] = [item[2][key] for item in batch]
+    
+    return images, labels, metadata
+
+
 def train_one_epoch(model, loader, optimizer, criterion, scheduler=None, max_grad_norm=1.0, device="cuda"):
     model.train()
     losses = []
@@ -132,9 +150,9 @@ def main():
     val_ds = ImageBinaryDataset(val_df, transform=eval_tf, img_size=img_size)
     test_ds = ImageBinaryDataset(test_df, transform=eval_tf, img_size=img_size)
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
-    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=collate_with_metadata)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, collate_fn=collate_with_metadata)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, collate_fn=collate_with_metadata)
 
     # Model
     model_name = config.get('model_name', 'efficientnet_b0')
