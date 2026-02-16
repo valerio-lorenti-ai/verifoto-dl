@@ -1,0 +1,24 @@
+# Quick test config with minimal epochs for debugging
+
+dataset_root: "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1"
+
+model_name: "efficientnet_b0"
+drop_rate: 0.2
+
+img_size: 224
+batch_size: 8  # Smaller for faster testing
+seed: 42
+
+# Minimal epochs for quick testing
+epochs_head: 1
+epochs_finetune: 2
+lr_head: 0.0003
+lr_finetune: 0.0001
+weight_decay: 0.001
+max_grad_norm: 1.0
+
+patience: 2
+monitor: "pr_auc"
+
+checkpoint_dir: "checkpoints"
+output_dir: "outputs/runs"

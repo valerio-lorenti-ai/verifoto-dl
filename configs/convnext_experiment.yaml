@@ -1,0 +1,24 @@
+# Experiment with ConvNeXt architecture
+
+dataset_root: "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1"
+
+# Different model
+model_name: "convnext_tiny"
+drop_rate: 0.3
+
+img_size: 224
+batch_size: 12  # Adjust based on GPU memory
+seed: 42
+
+epochs_head: 5
+epochs_finetune: 30
+lr_head: 0.0005
+lr_finetune: 0.00005  # Lower LR for larger model
+weight_decay: 0.001
+max_grad_norm: 1.0
+
+patience: 8
+monitor: "pr_auc"
+
+checkpoint_dir: "checkpoints"
+output_dir: "outputs/runs"
