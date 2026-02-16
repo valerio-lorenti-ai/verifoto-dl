@@ -12,16 +12,16 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from utils.data import (
+from src.utils.data import (
     parse_augmented_v6_dataset, stratified_group_split_v6,
     build_transforms, ImageBinaryDataset
 )
-from utils.model import build_model
-from utils.metrics import (
+from src.utils.model import build_model
+from src.utils.metrics import (
     predict_proba, compute_metrics_from_probs, compute_group_metrics,
     get_top_errors
 )
-from utils.visualization import plot_prob_distributions, plot_roc_pr, plot_confusion_matrix
+from src.utils.visualization import plot_prob_distributions, plot_roc_pr, plot_confusion_matrix
 from sklearn.metrics import confusion_matrix
 
 
