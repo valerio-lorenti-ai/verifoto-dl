@@ -1,29 +1,16 @@
-# Verifoto Training Configuration - augmented_v6 dataset
-
-# Dataset
-dataset_root: "/content/drive/MyDrive/DatasetVerifoto/augmented_v6"
-
-# Model
-model_name: "efficientnet_b0"
-drop_rate: 0.2
-
-# Training
-img_size: 224
 batch_size: 16
-seed: 42
-
-# Optimization
-epochs_head: 5
+checkpoint_dir: checkpoints
+dataset_root: /content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized
+drop_rate: 0.2
 epochs_finetune: 25
-lr_head: 0.0003
+epochs_head: 5
+img_size: 224
 lr_finetune: 0.0001
-weight_decay: 0.001
+lr_head: 0.0003
 max_grad_norm: 1.0
-
-# Early stopping
+model_name: efficientnet_b0
+monitor: pr_auc
+output_dir: outputs/runs
 patience: 6
-monitor: "pr_auc"  # or "f1"
-
-# Paths (will be overridden in Colab)
-checkpoint_dir: "checkpoints"
-output_dir: "outputs/runs"
+seed: 42
+weight_decay: 0.001
