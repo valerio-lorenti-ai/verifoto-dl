@@ -104,6 +104,17 @@ def parse_augmented_v6_dataset(root: str) -> pd.DataFrame:
     if len(df) == 0:
         raise RuntimeError(f"Nessuna immagine trovata in {root}. Verifica la struttura del dataset.")
     
+    # CRITICAL: Exclude kaggle_vale_con_id category
+    # This category contains only originali/buono images (no modified versions)
+    # It artificially inflates metrics by adding "easy" samples
+    # See .kiro/agent/decisions.md for detailed analysis
+    n_before = len(df)
+    df = df[df['food_category'] != 'kaggle_vale_con_id'].reset_index(drop=True)
+    n_excluded = n_before - len(df)
+    
+    if n_excluded > 0:
+        print(f"\n⚠️  Excluded {n_excluded} images from kaggle_vale_con_id category (data quality)")
+    
     print(f"\nDataset caricato: {len(df)} immagini")
     print(f"  - Originali (label=0): {(df['label'] == 0).sum()}")
     print(f"  - Modificate (label=1): {(df['label'] == 1).sum()}")
