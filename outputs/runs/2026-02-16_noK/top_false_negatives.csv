@@ -1,0 +1,5 @@
+path,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator
+/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized/modificate/sushi/insetti/gpt_image_1_5/2c11_lowres_phone.jpg,1,0.030335594,0,modificate,,sushi,insetti,gpt_image_1_5
+/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized/modificate/altro/marcio/gpt_image_1_5/9ab0_heavy.jpg,1,0.20681514,0,modificate,,altro,marcio,gpt_image_1_5
+/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized/modificate/riso_paella/crudo/gpt_image_1_5/0f3a_heavy.jpg,1,0.41199082,0,modificate,,riso_paella,crudo,gpt_image_1_5
+/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized/modificate/altro/crudo/gpt_image_1_5/46c1_noise_light.jpg,1,0.4573815,0,modificate,,altro,crudo,gpt_image_1_5

@@ -1,0 +1,45 @@
+{
+  "run_name": "2026-02-16_baseline_recovered",
+  "checkpoint": "/content/drive/MyDrive/verifoto_checkpoints/2026-02-16_baseline/best.pt",
+  "timestamp": "2026-02-16 20:24:13",
+  "threshold": 0.5,
+  "test_metrics": {
+    "acc": 0.9105263157894737,
+    "prec": 0.8605664488017429,
+    "rec": 0.9899749373433584,
+    "f1": 0.9207459207459208,
+    "prec_macro": 0.9236387061284462,
+    "rec_macro": 0.9063448093919009,
+    "f1_macro": 0.9090134437566462,
+    "roc_auc": 0.9759717854192267,
+    "pr_auc": 0.9639468550928687
+  },
+  "confusion_matrix": [
+    [
+      297,
+      64
+    ],
+    [
+      4,
+      395
+    ]
+  ],
+  "config": {
+    "batch_size": 16,
+    "checkpoint_dir": "checkpoints",
+    "dataset_root": "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized",
+    "drop_rate": 0.2,
+    "epochs_finetune": 25,
+    "epochs_head": 5,
+    "img_size": 224,
+    "lr_finetune": 0.0001,
+    "lr_head": 0.0003,
+    "max_grad_norm": 1.0,
+    "model_name": "efficientnet_b0",
+    "monitor": "pr_auc",
+    "output_dir": "outputs/runs",
+    "patience": 6,
+    "seed": 42,
+    "weight_decay": 0.001
+  }
+}
