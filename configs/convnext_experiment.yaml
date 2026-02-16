@@ -1,6 +1,6 @@
-# Experiment with ConvNeXt architecture
+# Experiment with ConvNeXt architecture - augmented_v6 dataset
 
-dataset_root: "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1"
+dataset_root: "/content/drive/MyDrive/DatasetVerifoto/augmented_v6"
 
 # Different model
 model_name: "convnext_tiny"

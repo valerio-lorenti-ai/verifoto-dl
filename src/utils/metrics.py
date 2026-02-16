@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from sklearn.metrics import (
@@ -13,18 +14,34 @@ def sigmoid_np(x):
 
 @torch.no_grad()
 def predict_proba(model, loader: DataLoader, device):
+    """
+    Predice probabilità e raccoglie metadati.
+    
+    Returns:
+        probs: array di probabilità
+        y_true: array di label vere
+        metadata: lista di dict con metadati per ogni sample
+    """
     model.eval()
-    logits_all, y_all, paths_all = [], [], []
-    for x, y, fp in loader:
+    logits_all, y_all, metadata_all = [], [], []
+    
+    for x, y, meta_batch in loader:
         x = x.to(device, non_blocking=True)
         logits = model(x).squeeze(1).detach().cpu().numpy()
         logits_all.append(logits)
         y_all.append(y.numpy())
-        paths_all.extend(fp)
+        
+        # Converti batch di metadati in lista di dict
+        batch_size = len(y)
+        for i in range(batch_size):
+            meta_dict = {k: v[i] if isinstance(v, (list, tuple)) else v for k, v in meta_batch.items()}
+            metadata_all.append(meta_dict)
+    
     logits_all = np.concatenate(logits_all)
     y_all = np.concatenate(y_all).astype(np.int32)
     probs = sigmoid_np(logits_all)
-    return probs, y_all, paths_all
+    
+    return probs, y_all, metadata_all
 
 
 def compute_metrics_from_probs(probs: np.ndarray, y_true: np.ndarray, threshold=0.5):
@@ -66,3 +83,96 @@ class EarlyStopping:
             return False, True
         self.bad += 1
         return self.bad >= self.patience, False
+
+
+
+def compute_group_metrics(df: pd.DataFrame, group_col: str, threshold=0.5):
+    """
+    Calcola metriche per gruppi (es: per food_category, defect_type, etc.)
+    
+    Args:
+        df: DataFrame con colonne y_true, y_prob, y_pred + metadati
+        group_col: nome colonna per raggruppamento
+        threshold: soglia per classificazione
+    
+    Returns:
+        DataFrame con metriche per gruppo
+    """
+    results = []
+    
+    for group_val, group_df in df.groupby(group_col):
+        if pd.isna(group_val) or len(group_df) == 0:
+            continue
+        
+        y_true = group_df['y_true'].values
+        y_prob = group_df['y_prob'].values
+        y_pred = group_df['y_pred'].values
+        
+        n = len(y_true)
+        n_pos = (y_true == 1).sum()
+        n_neg = (y_true == 0).sum()
+        
+        # Metriche base
+        acc = accuracy_score(y_true, y_pred)
+        prec, rec, f1, _ = precision_recall_fscore_support(
+            y_true, y_pred, average="binary", zero_division=0
+        )
+        
+        # AUC (solo se entrambe le classi presenti)
+        roc_auc = np.nan
+        pr_auc = np.nan
+        if len(np.unique(y_true)) == 2:
+            try:
+                roc_auc = roc_auc_score(y_true, y_prob)
+                pr_auc = average_precision_score(y_true, y_prob)
+            except:
+                pass
+        
+        # Confusion matrix
+        cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+        tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0, 0, 0, 0)
+        
+        results.append({
+            group_col: group_val,
+            'n_samples': n,
+            'n_pos': n_pos,
+            'n_neg': n_neg,
+            'accuracy': acc,
+            'precision': prec,
+            'recall': rec,
+            'f1': f1,
+            'roc_auc': roc_auc,
+            'pr_auc': pr_auc,
+            'tp': tp,
+            'fp': fp,
+            'tn': tn,
+            'fn': fn
+        })
+    
+    return pd.DataFrame(results).sort_values('n_samples', ascending=False)
+
+
+def get_top_errors(df: pd.DataFrame, error_type='fp', top_n=50):
+    """
+    Estrae i top errori (falsi positivi o falsi negativi).
+    
+    Args:
+        df: DataFrame con y_true, y_pred, y_prob + metadati
+        error_type: 'fp' (false positives) o 'fn' (false negatives)
+        top_n: numero di errori da restituire
+    
+    Returns:
+        DataFrame con top errori ordinati per confidenza
+    """
+    if error_type == 'fp':
+        # Predetto 1 ma vero 0
+        errors = df[(df['y_pred'] == 1) & (df['y_true'] == 0)].copy()
+        errors = errors.sort_values('y_prob', ascending=False)
+    elif error_type == 'fn':
+        # Predetto 0 ma vero 1
+        errors = df[(df['y_pred'] == 0) & (df['y_true'] == 1)].copy()
+        errors = errors.sort_values('y_prob', ascending=True)
+    else:
+        raise ValueError("error_type deve essere 'fp' o 'fn'")
+    
+    return errors.head(top_n)

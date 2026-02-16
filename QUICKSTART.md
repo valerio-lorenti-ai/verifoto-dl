@@ -61,8 +61,14 @@ python -m src.eval \
 # Compare all runs
 python scripts/compare_runs.py
 
+# Analyze specific run with metadata (NEW!)
+python scripts/analyze_results.py <run_name>
+
 # View specific run
 cat outputs/runs/<run_name>/metrics.json
+
+# View group metrics (NEW!)
+cat outputs/runs/<run_name>/group_metrics_food.csv
 ```
 
 ## 📁 File Locations
@@ -72,8 +78,12 @@ cat outputs/runs/<run_name>/metrics.json
 | Code | `src/` | ✅ Yes (GitHub) |
 | Configs | `configs/` | ✅ Yes (GitHub) |
 | Results | `outputs/runs/` | ✅ Yes (GitHub) |
+| Predictions | `outputs/runs/<run>/predictions.csv` | ✅ Yes (GitHub) |
+| Group Metrics | `outputs/runs/<run>/group_metrics_*.csv` | ✅ Yes (GitHub) |
 | Checkpoints | Drive or `checkpoints/` | ❌ No (too large) |
-| Dataset | Drive | ❌ No (too large) |
+| Dataset | Drive (`augmented_v6/`) | ❌ No (too large) |
+
+**New in augmented_v6**: Detailed metadata tracking for error analysis. See `docs/AUGMENTED_V6_DATASET.md`.
 
 ## 🔄 Typical Workflow
 
@@ -164,6 +174,15 @@ epochs_head: 10        # More head-only training
 epochs_finetune: 50    # More fine-tuning
 lr_finetune: 0.00005   # Lower learning rate
 ```
+
+## 🤖 AI Assistant Context
+
+This project uses Kiro steering for optimal AI collaboration:
+- `.kiro/steering/` - Auto-included guidelines (project context, code standards)
+- `.kiro/agent/` - Working context (status, decisions) - NOT versioned
+- See `.kiro/USAGE.md` for details
+
+Agent context is centralized and lightweight - no scattered files in project root.
 
 ## 📚 More Info
 

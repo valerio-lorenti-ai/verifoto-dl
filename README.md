@@ -1,28 +1,31 @@
 # Verifoto Deep Learning
 
+Training pipeline for fraud detection in food delivery images. Part of the Verifoto-AI SaaS platform that helps restaurants detect manipulated photos used to obtain undeserved refunds.
+
+## About Verifoto
+
+Verifoto-AI is a web app for restaurants working with food delivery to defend against photographic fraud. Some customers digitally manipulate food images (adding fake mold, artificial burns, or AI-generated defects) to get unjustified refunds. This project trains the deep learning model that powers the fraud detection.
+
+**Key Principle**: Conservative approach - optimize for precision over recall. Better to miss some fraud than falsely accuse legitimate complaints.
+
+## This Repository
+
 Pipeline for training and evaluating fraud detection models on Google Colab with GPU, while keeping code versioned on GitHub and checkpoints on Google Drive.
 
 ## Project Structure
 
 ```
 verifoto-dl/
-├── src/
-│   ├── train.py              # Training script
-│   ├── eval.py               # Evaluation script
-│   └── utils/
-│       ├── data.py           # Dataset and augmentation
-│       ├── model.py          # Model building
-│       ├── metrics.py        # Metrics and evaluation
-│       └── visualization.py  # Plotting utilities
-├── configs/
-│   └── baseline.yaml         # Training configuration
-├── scripts/
-│   └── colab_bootstrap.md    # Colab setup instructions
-├── outputs/
-│   └── runs/                 # Training results (lightweight, versioned)
-├── checkpoints/              # Model weights (NOT versioned, stored on Drive)
-└── requirements.txt
+├── src/                  # Core training/evaluation code
+├── configs/              # YAML configurations
+├── scripts/              # Helper scripts + Colab notebook
+├── docs/                 # User documentation
+├── .kiro/                # AI assistant context (steering + agent state)
+├── outputs/runs/         # Training results (versioned)
+└── checkpoints/          # Model weights (NOT versioned, on Drive)
 ```
+
+For AI assistant working context, see `.kiro/USAGE.md`.
 
 ## Quick Start
 
@@ -37,6 +40,8 @@ cd verifoto-dl
 pip install -r requirements.txt
 python scripts/quick_test.py
 ```
+
+**Note**: This project now supports the new `augmented_v6` dataset structure with hierarchical metadata. See `docs/AUGMENTED_V6_DATASET.md` for details.
 
 ### 2. Develop Locally (Kiro)
 
@@ -111,11 +116,20 @@ Each run creates:
 outputs/runs/<run_name>/
 ├── metrics.json       # All metrics + config
 ├── notes.md           # Human-readable summary
+├── predictions.csv    # All predictions with metadata
+├── group_metrics_food.csv        # Metrics by food category
+├── group_metrics_defect.csv      # Metrics by defect type
+├── group_metrics_generator.csv   # Metrics by generator
+├── group_metrics_quality.csv     # Metrics by quality
+├── top_false_positives.csv       # Top FP errors
+├── top_false_negatives.csv       # Top FN errors
 ├── cm.png             # Confusion matrix
 ├── roc_curve.png      # ROC curve
 ├── pr_curve.png       # Precision-Recall curve
 └── prob_dist.png      # Probability distribution
 ```
+
+See `docs/AUGMENTED_V6_DATASET.md` for details on metadata and analysis.
 
 ### metrics.json Structure
 
@@ -154,6 +168,17 @@ Edit `configs/baseline.yaml` to change:
 - **Fast iteration**: Pull code changes in Colab, no manual file copying
 - **AI-friendly output**: Structured JSON for easy parsing
 - **Group-aware splitting**: Prevents data leakage from near-duplicates
+- **Metadata tracking**: Analyze errors by food category, defect type, generator
+- **Conservative approach**: Optimized for high precision (low false positives)
+
+## Production Context
+
+This model will be deployed in the Verifoto-AI web app where:
+- Restaurants upload suspicious images
+- Model provides confidence score + technical indicators
+- LLM generates human-readable explanation
+- Report used for internal decision-making
+- **False positives damage trust** → precision is critical
 
 ## Tips
 

@@ -16,12 +16,14 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from utils.data import (
-    find_class_dirs, list_images_in_dir, compute_hashes,
-    group_near_duplicates, label_of_path, stratified_group_split,
+    parse_augmented_v6_dataset, stratified_group_split_v6,
     build_transforms, ImageBinaryDataset
 )
 from utils.model import build_model, set_backbone_trainable
-from utils.metrics import predict_proba, compute_metrics_from_probs, EarlyStopping
+from utils.metrics import (
+    predict_proba, compute_metrics_from_probs, compute_group_metrics,
+    get_top_errors, EarlyStopping
+)
 from utils.visualization import plot_prob_distributions, plot_roc_pr, plot_confusion_matrix
 from sklearn.metrics import confusion_matrix
 
@@ -46,7 +48,7 @@ def get_git_commit():
 def train_one_epoch(model, loader, optimizer, criterion, scheduler=None, max_grad_norm=1.0, device="cuda"):
     model.train()
     losses = []
-    for x, y, _ in tqdm(loader, desc="train", leave=False):
+    for x, y, _ in tqdm(loader, desc="train", leave=False):  # _ = metadata (non usati in training)
         x = x.to(device, non_blocking=True)
         y = y.to(device, non_blocking=True).float()
 
@@ -67,7 +69,7 @@ def train_one_epoch(model, loader, optimizer, criterion, scheduler=None, max_gra
 
 @torch.no_grad()
 def validate(model, loader, threshold=0.5, device="cuda"):
-    probs, y_true, _ = predict_proba(model, loader, device)
+    probs, y_true, _ = predict_proba(model, loader, device)  # _ = metadata (non usati in validation)
     return compute_metrics_from_probs(probs, y_true, threshold=threshold)
 
 
@@ -113,41 +115,21 @@ def main():
 
     # Load data
     print("\n=== Loading dataset ===")
-    non_dir, frode_dir = find_class_dirs(dataset_root)
-    if non_dir is None or frode_dir is None:
-        raise RuntimeError("Cannot find NON_FRODE and FRODE directories")
-
-    non_paths = list_images_in_dir(non_dir)
-    fro_paths = list_images_in_dir(frode_dir)
-    print(f"NON_FRODE: {len(non_paths)} | FRODE: {len(fro_paths)}")
-
-    # Deduplication
-    all_paths = non_paths + fro_paths
-    hashes = compute_hashes(all_paths, hash_size=8)
-    groups = group_near_duplicates(all_paths, hashes, max_hamming=4)
-
-    group_items = []
-    for gid, paths in groups.items():
-        ys = [label_of_path(p, non_dir, frode_dir) for p in paths]
-        y = int(np.round(np.mean(ys)))
-        group_items.append((gid, y, paths))
-
-    print(f"Groups: {len(group_items)}")
-
+    df = parse_augmented_v6_dataset(dataset_root)
+    
     # Split
-    (train_paths, train_y, _), (val_paths, val_y, _), (test_paths, test_y, _) = stratified_group_split(
-        group_items, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+    train_df, val_df, test_df = stratified_group_split_v6(
+        df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
     )
-    print(f"Split: train={len(train_paths)}, val={len(val_paths)}, test={len(test_paths)}")
-
+    
     # Datasets
     img_size = config.get('img_size', 224)
     batch_size = config.get('batch_size', 16)
     train_tf, eval_tf = build_transforms(img_size)
 
-    train_ds = ImageBinaryDataset(train_paths, train_y, transform=train_tf, img_size=img_size)
-    val_ds = ImageBinaryDataset(val_paths, val_y, transform=eval_tf, img_size=img_size)
-    test_ds = ImageBinaryDataset(test_paths, test_y, transform=eval_tf, img_size=img_size)
+    train_ds = ImageBinaryDataset(train_df, transform=train_tf, img_size=img_size)
+    val_ds = ImageBinaryDataset(val_df, transform=eval_tf, img_size=img_size)
+    test_ds = ImageBinaryDataset(test_df, transform=eval_tf, img_size=img_size)
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
@@ -159,8 +141,8 @@ def main():
     model = build_model(model_name, pretrained=True, drop_rate=drop_rate).to(device)
 
     # Loss
-    train_pos = sum(train_y)
-    train_neg = len(train_y) - train_pos
+    train_pos = (train_df['label'] == 1).sum()
+    train_neg = (train_df['label'] == 0).sum()
     pos_weight = torch.tensor([train_neg / max(train_pos, 1)], dtype=torch.float32).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     print(f"pos_weight: {pos_weight.item():.2f}")
@@ -236,11 +218,60 @@ def main():
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
 
-    test_probs, test_true, test_paths = predict_proba(model, test_loader, device)
+    test_probs, test_true, test_metadata = predict_proba(model, test_loader, device)
     test_metrics = compute_metrics_from_probs(test_probs, test_true, threshold=0.5)
     test_cm = confusion_matrix(test_true, (test_probs >= 0.5).astype(int), labels=[0, 1])
 
     print(f"Test metrics: {test_metrics}")
+
+    # Crea DataFrame con predictions e metadati
+    predictions_df = pd.DataFrame({
+        'path': [m['path'] for m in test_metadata],
+        'y_true': test_true,
+        'y_prob': test_probs,
+        'y_pred': (test_probs >= 0.5).astype(int),
+        'source': [m.get('source') for m in test_metadata],
+        'quality': [m.get('quality') for m in test_metadata],
+        'food_category': [m.get('food_category') for m in test_metadata],
+        'defect_type': [m.get('defect_type') for m in test_metadata],
+        'generator': [m.get('generator') for m in test_metadata]
+    })
+    
+    # Salva predictions
+    predictions_df.to_csv(output_dir / "predictions.csv", index=False)
+    print(f"✓ Saved predictions.csv ({len(predictions_df)} samples)")
+    
+    # Calcola e salva group metrics
+    print("\n=== Computing group metrics ===")
+    
+    # Per food_category
+    group_food = compute_group_metrics(predictions_df, 'food_category', threshold=0.5)
+    group_food.to_csv(output_dir / "group_metrics_food.csv", index=False)
+    print(f"✓ Saved group_metrics_food.csv ({len(group_food)} groups)")
+    
+    # Per defect_type
+    group_defect = compute_group_metrics(predictions_df, 'defect_type', threshold=0.5)
+    group_defect.to_csv(output_dir / "group_metrics_defect.csv", index=False)
+    print(f"✓ Saved group_metrics_defect.csv ({len(group_defect)} groups)")
+    
+    # Per generator (solo modificate)
+    group_generator = compute_group_metrics(predictions_df, 'generator', threshold=0.5)
+    group_generator.to_csv(output_dir / "group_metrics_generator.csv", index=False)
+    print(f"✓ Saved group_metrics_generator.csv ({len(group_generator)} groups)")
+    
+    # Per quality (solo originali)
+    group_quality = compute_group_metrics(predictions_df, 'quality', threshold=0.5)
+    group_quality.to_csv(output_dir / "group_metrics_quality.csv", index=False)
+    print(f"✓ Saved group_metrics_quality.csv ({len(group_quality)} groups)")
+    
+    # Top errors
+    top_fp = get_top_errors(predictions_df, error_type='fp', top_n=50)
+    top_fp.to_csv(output_dir / "top_false_positives.csv", index=False)
+    print(f"✓ Saved top_false_positives.csv ({len(top_fp)} errors)")
+    
+    top_fn = get_top_errors(predictions_df, error_type='fn', top_n=50)
+    top_fn.to_csv(output_dir / "top_false_negatives.csv", index=False)
+    print(f"✓ Saved top_false_negatives.csv ({len(top_fn)} errors)")
 
     # Save outputs
     plot_prob_distributions(test_probs, test_true, save_path=output_dir / "prob_dist.png")

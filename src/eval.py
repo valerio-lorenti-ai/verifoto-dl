@@ -8,16 +8,19 @@ from pathlib import Path
 
 import yaml
 import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
 from utils.data import (
-    find_class_dirs, list_images_in_dir, compute_hashes,
-    group_near_duplicates, label_of_path, stratified_group_split,
+    parse_augmented_v6_dataset, stratified_group_split_v6,
     build_transforms, ImageBinaryDataset
 )
 from utils.model import build_model
-from utils.metrics import predict_proba, compute_metrics_from_probs
+from utils.metrics import (
+    predict_proba, compute_metrics_from_probs, compute_group_metrics,
+    get_top_errors
+)
 from utils.visualization import plot_prob_distributions, plot_roc_pr, plot_confusion_matrix
 from sklearn.metrics import confusion_matrix
 
@@ -57,36 +60,20 @@ def main():
 
     # Load data
     print("\n=== Loading dataset ===")
-    non_dir, frode_dir = find_class_dirs(dataset_root)
-    if non_dir is None or frode_dir is None:
-        raise RuntimeError("Cannot find NON_FRODE and FRODE directories")
-
-    non_paths = list_images_in_dir(non_dir)
-    fro_paths = list_images_in_dir(frode_dir)
-    print(f"NON_FRODE: {len(non_paths)} | FRODE: {len(fro_paths)}")
-
-    all_paths = non_paths + fro_paths
-    hashes = compute_hashes(all_paths, hash_size=8)
-    groups = group_near_duplicates(all_paths, hashes, max_hamming=4)
-
-    group_items = []
-    for gid, paths in groups.items():
-        ys = [label_of_path(p, non_dir, frode_dir) for p in paths]
-        y = int(np.round(np.mean(ys)))
-        group_items.append((gid, y, paths))
-
+    df = parse_augmented_v6_dataset(dataset_root)
+    
     # Split (use same seed for reproducibility)
-    (_, _, _), (_, _, _), (test_paths, test_y, _) = stratified_group_split(
-        group_items, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+    _, _, test_df = stratified_group_split_v6(
+        df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
     )
-    print(f"Test set: {len(test_paths)}")
+    print(f"Test set: {len(test_df)}")
 
     # Dataset
     img_size = config.get('img_size', 224)
     batch_size = config.get('batch_size', 16)
     _, eval_tf = build_transforms(img_size)
 
-    test_ds = ImageBinaryDataset(test_paths, test_y, transform=eval_tf, img_size=img_size)
+    test_ds = ImageBinaryDataset(test_df, transform=eval_tf, img_size=img_size)
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
 
     # Load model
@@ -101,12 +88,57 @@ def main():
 
     # Evaluate
     print(f"\n=== Evaluation (threshold={args.threshold}) ===")
-    test_probs, test_true, test_paths = predict_proba(model, test_loader, device)
+    test_probs, test_true, test_metadata = predict_proba(model, test_loader, device)
     test_metrics = compute_metrics_from_probs(test_probs, test_true, threshold=args.threshold)
     test_cm = confusion_matrix(test_true, (test_probs >= args.threshold).astype(int), labels=[0, 1])
 
     print(f"Metrics: {test_metrics}")
     print(f"Confusion Matrix:\n{test_cm}")
+
+    # Crea DataFrame con predictions e metadati
+    predictions_df = pd.DataFrame({
+        'path': [m['path'] for m in test_metadata],
+        'y_true': test_true,
+        'y_prob': test_probs,
+        'y_pred': (test_probs >= args.threshold).astype(int),
+        'source': [m.get('source') for m in test_metadata],
+        'quality': [m.get('quality') for m in test_metadata],
+        'food_category': [m.get('food_category') for m in test_metadata],
+        'defect_type': [m.get('defect_type') for m in test_metadata],
+        'generator': [m.get('generator') for m in test_metadata]
+    })
+    
+    # Salva predictions
+    predictions_df.to_csv(output_dir / "predictions.csv", index=False)
+    print(f"✓ Saved predictions.csv ({len(predictions_df)} samples)")
+    
+    # Calcola e salva group metrics
+    print("\n=== Computing group metrics ===")
+    
+    group_food = compute_group_metrics(predictions_df, 'food_category', threshold=args.threshold)
+    group_food.to_csv(output_dir / "group_metrics_food.csv", index=False)
+    print(f"✓ Saved group_metrics_food.csv ({len(group_food)} groups)")
+    
+    group_defect = compute_group_metrics(predictions_df, 'defect_type', threshold=args.threshold)
+    group_defect.to_csv(output_dir / "group_metrics_defect.csv", index=False)
+    print(f"✓ Saved group_metrics_defect.csv ({len(group_defect)} groups)")
+    
+    group_generator = compute_group_metrics(predictions_df, 'generator', threshold=args.threshold)
+    group_generator.to_csv(output_dir / "group_metrics_generator.csv", index=False)
+    print(f"✓ Saved group_metrics_generator.csv ({len(group_generator)} groups)")
+    
+    group_quality = compute_group_metrics(predictions_df, 'quality', threshold=args.threshold)
+    group_quality.to_csv(output_dir / "group_metrics_quality.csv", index=False)
+    print(f"✓ Saved group_metrics_quality.csv ({len(group_quality)} groups)")
+    
+    # Top errors
+    top_fp = get_top_errors(predictions_df, error_type='fp', top_n=50)
+    top_fp.to_csv(output_dir / "top_false_positives.csv", index=False)
+    print(f"✓ Saved top_false_positives.csv ({len(top_fp)} errors)")
+    
+    top_fn = get_top_errors(predictions_df, error_type='fn', top_n=50)
+    top_fn.to_csv(output_dir / "top_false_negatives.csv", index=False)
+    print(f"✓ Saved top_false_negatives.csv ({len(top_fn)} errors)")
 
     # Save outputs
     plot_prob_distributions(test_probs, test_true, save_path=output_dir / "prob_dist.png")

@@ -1,7 +1,7 @@
-# Verifoto Training Configuration
+# Verifoto Training Configuration - augmented_v6 dataset
 
 # Dataset
-dataset_root: "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1"
+dataset_root: "/content/drive/MyDrive/DatasetVerifoto/augmented_v6"
 
 # Model
 model_name: "efficientnet_b0"

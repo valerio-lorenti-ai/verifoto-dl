@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Tuple, Dict, Optional
 
 import numpy as np
+import pandas as pd
 from PIL import Image
 import cv2
 import torch
@@ -17,39 +18,110 @@ IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
-def find_class_dirs(root: str):
+def parse_augmented_v6_dataset(root: str) -> pd.DataFrame:
+    """
+    Scansiona il dataset augmented_v6 e crea un DataFrame con metadati.
+    
+    Struttura attesa:
+    augmented_v6/
+        originali/
+            buono/<food_category>/*.jpg
+            cattivo/<food_category>/<defect_type>/*.jpg
+        modificate/
+            <food_category>/<defect_type>/<generator>/*.jpg
+    
+    Returns:
+        DataFrame con colonne: path, label, source, quality, food_category, defect_type, generator
+    """
     rootp = Path(root)
     if not rootp.exists():
         raise FileNotFoundError(f"Dataset root non esiste: {root}")
+    
+    records = []
+    
+    # Scansiona tutte le immagini
+    for img_path in tqdm(list(rootp.rglob("*")), desc="Scanning dataset", leave=False):
+        if not img_path.is_file() or img_path.suffix.lower() not in IMG_EXTS:
+            continue
+        
+        # Ottieni path relativo rispetto a root
+        try:
+            rel_path = img_path.relative_to(rootp)
+        except ValueError:
+            continue
+        
+        parts = rel_path.parts
+        if len(parts) < 2:
+            continue
+        
+        # Inizializza metadati
+        meta = {
+            "path": str(img_path),
+            "label": None,
+            "source": None,
+            "quality": None,
+            "food_category": None,
+            "defect_type": None,
+            "generator": None
+        }
+        
+        # Determina source e label
+        if parts[0] == "originali":
+            meta["source"] = "originali"
+            meta["label"] = 0  # NON_FRODE
+            
+            if len(parts) >= 2:
+                meta["quality"] = parts[1]  # "buono" o "cattivo"
+            
+            if len(parts) >= 3:
+                meta["food_category"] = parts[2]
+            
+            if len(parts) >= 4 and meta["quality"] == "cattivo":
+                meta["defect_type"] = parts[3]
+        
+        elif parts[0] == "modificate":
+            meta["source"] = "modificate"
+            meta["label"] = 1  # FRODE
+            
+            if len(parts) >= 2:
+                meta["food_category"] = parts[1]
+            
+            if len(parts) >= 3:
+                meta["defect_type"] = parts[2]
+            
+            if len(parts) >= 4:
+                meta["generator"] = parts[3]
+        
+        else:
+            # Path non riconosciuto, skip
+            continue
+        
+        if meta["label"] is not None:
+            records.append(meta)
+    
+    df = pd.DataFrame(records)
+    
+    if len(df) == 0:
+        raise RuntimeError(f"Nessuna immagine trovata in {root}. Verifica la struttura del dataset.")
+    
+    print(f"\nDataset caricato: {len(df)} immagini")
+    print(f"  - Originali (label=0): {(df['label'] == 0).sum()}")
+    print(f"  - Modificate (label=1): {(df['label'] == 1).sum()}")
+    print(f"  - Food categories: {df['food_category'].nunique()}")
+    print(f"  - Defect types: {df['defect_type'].nunique()}")
+    print(f"  - Generators: {df['generator'].nunique()}")
+    
+    return df
 
-    class_alias = {
-        "NON_FRODE": ["NON_FRODE", "non_frode", "real", "REAL", "authentic", "ok"],
-        "FRODE": ["FRODE", "frode", "fake", "FAKE", "manipulated", "fraud"],
-    }
 
-    def match_class_dir(parent: Path, aliases: List[str]) -> Optional[Path]:
-        for a in aliases:
-            p = parent / a
-            if p.exists() and p.is_dir():
-                return p
-        return None
-
-    candidates = [rootp / "images", rootp]
-    for sp in ["train", "val", "valid", "validation", "test"]:
-        candidates += [rootp / sp, rootp / sp / "images"]
-
-    found = {}
-    for canon, aliases in class_alias.items():
-        found[canon] = None
-        for base in candidates:
-            d = match_class_dir(base, aliases)
-            if d is not None:
-                found[canon] = d
-                break
-    return found["NON_FRODE"], found["FRODE"]
+def find_class_dirs(root: str):
+    """Legacy function for backward compatibility - now returns None, None"""
+    print("Warning: find_class_dirs is deprecated for augmented_v6 dataset")
+    return None, None
 
 
 def list_images_in_dir(d: Path) -> List[str]:
+    """Legacy function for backward compatibility"""
     paths = []
     for p in d.rglob("*"):
         if p.is_file() and p.suffix.lower() in IMG_EXTS:
@@ -129,7 +201,74 @@ def label_of_path(p: str, non_dir: Path, frode_dir: Path) -> int:
     raise ValueError(f"Label non determinabile per: {p}")
 
 
+def stratified_group_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, test_ratio=0.15, seed=42):
+    """
+    Split stratificato per augmented_v6 dataset.
+    Stratifica per label e food_category.
+    
+    Args:
+        df: DataFrame con colonne path, label, food_category, etc.
+        train_ratio, val_ratio, test_ratio: proporzioni split
+        seed: random seed
+    
+    Returns:
+        train_df, val_df, test_df
+    """
+    assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6
+    
+    # Crea stratification key: label + food_category
+    df = df.copy()
+    df['strat_key'] = df['label'].astype(str) + "_" + df['food_category'].fillna("unknown")
+    
+    train_dfs = []
+    val_dfs = []
+    test_dfs = []
+    
+    # Split per ogni gruppo
+    for key, group in df.groupby('strat_key'):
+        n = len(group)
+        indices = group.index.tolist()
+        
+        # Shuffle
+        rnd = random.Random(seed)
+        rnd.shuffle(indices)
+        
+        # Split
+        n_train = int(round(n * train_ratio))
+        n_val = int(round(n * val_ratio))
+        
+        train_idx = indices[:n_train]
+        val_idx = indices[n_train:n_train+n_val]
+        test_idx = indices[n_train+n_val:]
+        
+        train_dfs.append(df.loc[train_idx])
+        val_dfs.append(df.loc[val_idx])
+        test_dfs.append(df.loc[test_idx])
+    
+    train_df = pd.concat(train_dfs, ignore_index=True)
+    val_df = pd.concat(val_dfs, ignore_index=True)
+    test_df = pd.concat(test_dfs, ignore_index=True)
+    
+    # Shuffle finale
+    train_df = train_df.sample(frac=1, random_state=seed).reset_index(drop=True)
+    val_df = val_df.sample(frac=1, random_state=seed).reset_index(drop=True)
+    test_df = test_df.sample(frac=1, random_state=seed).reset_index(drop=True)
+    
+    # Rimuovi colonna temporanea
+    train_df = train_df.drop(columns=['strat_key'])
+    val_df = val_df.drop(columns=['strat_key'])
+    test_df = test_df.drop(columns=['strat_key'])
+    
+    print(f"\nSplit completato:")
+    print(f"  Train: {len(train_df)} ({train_df['label'].mean():.3f} pos rate)")
+    print(f"  Val:   {len(val_df)} ({val_df['label'].mean():.3f} pos rate)")
+    print(f"  Test:  {len(test_df)} ({test_df['label'].mean():.3f} pos rate)")
+    
+    return train_df, val_df, test_df
+
+
 def stratified_group_split(group_items, train_ratio=0.70, val_ratio=0.15, test_ratio=0.15, seed=42):
+    """Legacy function for backward compatibility with old dataset structure"""
     assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6
     rnd = random.Random(seed)
 
@@ -231,22 +370,44 @@ def build_transforms(img_size=224):
 
 
 class ImageBinaryDataset(Dataset):
-    def __init__(self, paths: List[str], labels: List[int], transform=None, img_size=224):
-        self.paths = paths
-        self.labels = labels
+    def __init__(self, df: pd.DataFrame, transform=None, img_size=224):
+        """
+        Dataset per augmented_v6 con metadati.
+        
+        Args:
+            df: DataFrame con colonne path, label, source, quality, food_category, defect_type, generator
+            transform: torchvision transforms
+            img_size: dimensione immagine per fallback
+        """
+        self.df = df.reset_index(drop=True)
         self.transform = transform
         self.img_size = img_size
 
     def __len__(self):
-        return len(self.paths)
+        return len(self.df)
 
     def __getitem__(self, idx):
-        fp = self.paths[idx]
-        y = int(self.labels[idx])
+        row = self.df.iloc[idx]
+        fp = row['path']
+        y = int(row['label'])
+        
+        # Carica immagine
         try:
             img = Image.open(fp).convert("RGB")
         except Exception:
             img = Image.new("RGB", (self.img_size, self.img_size), (0, 0, 0))
+        
         if self.transform:
             img = self.transform(img)
-        return img, torch.tensor(y, dtype=torch.float32), fp
+        
+        # Metadati
+        meta = {
+            'path': fp,
+            'source': row.get('source'),
+            'quality': row.get('quality'),
+            'food_category': row.get('food_category'),
+            'defect_type': row.get('defect_type'),
+            'generator': row.get('generator')
+        }
+        
+        return img, torch.tensor(y, dtype=torch.float32), meta
