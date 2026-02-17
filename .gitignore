@@ -24,12 +24,17 @@ wheels/
 *.egg
 
 # Model files (stored on Drive)
+# Ignore model checkpoints (too large for git)
 *.pt
 *.pth
 *.ckpt
 *.onnx
 *.ts
 checkpoints/
+
+# But allow checkpoint metadata if needed
+!checkpoints/README.md
+!checkpoints/*/config.yaml
 
 # Data (stored on Drive)
 data/
@@ -54,9 +59,29 @@ Thumbs.db
 # Logs
 *.log
 
-# Keep structure but ignore content
-outputs/runs/*
-!outputs/runs/.gitkeep
+# Outputs: Allow results but ignore heavy files
+# Allow all files in outputs/runs/ by default
+!outputs/runs/
+
+# But ignore specific heavy files
+outputs/runs/**/*.pt
+outputs/runs/**/*.pth
+outputs/runs/**/*.ckpt
+outputs/runs/**/*.h5
+outputs/runs/**/*.pkl
+outputs/runs/**/*.npy
+outputs/runs/**/*.npz
+
+# Allow these important result files
+!outputs/runs/**/metrics.json
+!outputs/runs/**/predictions.csv
+!outputs/runs/**/group_metrics_*.csv
+!outputs/runs/**/top_false_*.csv
+!outputs/runs/**/notes.md
+!outputs/runs/**/CRITICAL_ANALYSIS.md
+!outputs/runs/**/*.png
+!outputs/runs/**/*.jpg
+!outputs/runs/**/*.jpeg
 
 # Agent context (AI assistant working files)
 .kiro/agent/
