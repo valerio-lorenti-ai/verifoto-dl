@@ -203,42 +203,26 @@ def label_of_path(p: str, non_dir: Path, frode_dir: Path) -> int:
 
 def extract_photo_id(path: str) -> str:
     """
-    Estrae ID univoco della foto dal path, rimuovendo suffissi di manipolazione.
+    Estrae ID univoco della foto usando i PRIMI 4 CARATTERI del filename.
+    
+    IMPORTANTE: Tutte le versioni della stessa foto (originale, modificata, augmented)
+    condividono gli stessi primi 4 caratteri del nome file.
     
     Esempi:
-        originali/buono/pizza/pizza_001.jpg → pizza_001
-        modificate/pizza/bruciato/gpt/.../pizza_001_bruciato.jpg → pizza_001
-        modificate/pizza/crudo/gpt/.../bb31_q70.jpg → bb31
+        originali/buono/pasta/1976_q95.jpg → 1976
+        originali/buono/pasta/1976_highres_crop.jpg → 1976
+        modificate/pasta/crudo/gpt/.../1976_bruciato.jpg → 1976
+        originali/buono/riso_paella/3cac_q50.jpg → 3cac
+        modificate/riso_paella/bruciato/gpt/.../3cac_bruciato_q70.jpg → 3cac
     
     Args:
         path: path completo dell'immagine
     
     Returns:
-        photo_id: identificatore univoco della foto originale
+        photo_id: primi 4 caratteri del filename (es: "1976", "3cac", "dd44")
     """
     filename = Path(path).stem  # Rimuove estensione
-    
-    # Lista di suffissi da rimuovere (manipolazioni, augmentations, etc.)
-    suffixes_to_remove = [
-        # Difetti
-        '_bruciato', '_crudo', '_marcio', '_ammuffito', '_insetti',
-        # Compressione
-        '_q50', '_q70', '_q95', '_q30', '_q85',
-        # Resize/crop
-        '_tiny_thumb', '_lowres_phone', '_highres_crop',
-        # Manipolazioni
-        '_whatsapp', '_rotate_recomp', '_double', '_noise_light', '_heavy',
-        # Platform
-        '_platform', '_instagram', '_facebook',
-        # Generatori (potrebbero essere nel nome)
-        '_gpt', '_dalle', '_midjourney'
-    ]
-    
-    # Rimuovi tutti i suffissi
-    for suffix in suffixes_to_remove:
-        filename = filename.replace(suffix, '')
-    
-    return filename
+    return filename[:4]  # Primi 4 caratteri
 
 
 def analyze_split_leakage(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame):
