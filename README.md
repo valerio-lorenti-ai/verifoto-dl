@@ -1,100 +1,95 @@
 # Verifoto Deep Learning
 
-Training pipeline for fraud detection in food delivery images. Part of the Verifoto-AI SaaS platform that helps restaurants detect manipulated photos used to obtain undeserved refunds.
+Training pipeline per rilevamento frodi fotografiche nel food delivery. Parte della piattaforma Verifoto-AI SaaS che aiuta i ristoranti a identificare foto manipolate usate per ottenere rimborsi non dovuti.
 
-## About Verifoto
+## Cos'è Verifoto
 
-Verifoto-AI is a web app for restaurants working with food delivery to defend against photographic fraud. Some customers digitally manipulate food images (adding fake mold, artificial burns, or AI-generated defects) to get unjustified refunds. This project trains the deep learning model that powers the fraud detection.
+Verifoto-AI è una web app per ristoranti che lavorano con il food delivery, per difendersi dalle frodi fotografiche. Alcuni clienti manipolano digitalmente le immagini del cibo (aggiungendo muffe false, bruciature artificiali, o difetti generati con AI) per ottenere rimborsi ingiustificati.
 
-**Key Principle**: Conservative approach - optimize for precision over recall. Better to miss some fraud than falsely accuse legitimate complaints.
+**Principio chiave**: Approccio conservativo - ottimizzare per precision piuttosto che recall. Meglio perdere qualche frode che accusare falsamente reclami legittimi.
 
-## This Repository
-
-Pipeline for training and evaluating fraud detection models on Google Colab with GPU, while keeping code versioned on GitHub and checkpoints on Google Drive.
-
-## Project Structure
+## Struttura Progetto
 
 ```
 verifoto-dl/
-├── src/                  # Core training/evaluation code
-├── configs/              # YAML configurations
-├── scripts/              # Helper scripts + Colab notebook
-├── docs/                 # User documentation
-├── .kiro/                # AI assistant context (steering + agent state)
-├── outputs/runs/         # Training results (versioned)
-└── checkpoints/          # Model weights (NOT versioned, on Drive)
+├── src/                  # Codice training/evaluation
+├── configs/              # Configurazioni YAML
+├── scripts/              # Script helper + notebook Colab
+├── outputs/runs/         # Risultati training (versionati)
+├── checkpoints/          # Pesi modello (NON versionati, su Drive)
+├── docs/                 # Documentazione tecnica di riferimento
+└── .kiro/                # Contesto AI assistant (steering + stato)
 ```
-
-For AI assistant working context, see `.kiro/USAGE.md`.
 
 ## Quick Start
 
-### 1. First Time Setup
+### Setup Iniziale
 
 ```bash
-# Clone and setup
+# Clone
 git clone https://github.com/<YOUR_USERNAME>/verifoto-dl.git
 cd verifoto-dl
 
-# Test setup (optional)
+# Test locale (opzionale)
 pip install -r requirements.txt
 python scripts/quick_test.py
 ```
 
-**Note**: This project now supports the new `augmented_v6` dataset structure with hierarchical metadata. See `docs/AUGMENTED_V6_DATASET.md` for details.
+### Workflow Tipico
 
-### 2. Develop Locally (Kiro)
-
-```bash
-# Edit code in src/ or configs/
-# Commit and push
-git add .
-git commit -m "Update model architecture"
-git push
+```
+1. Modifica codice localmente
+2. git commit + push
+3. Apri Colab → git pull
+4. Esegui training (salva su Drive)
+5. Commit risultati da Colab
+6. git pull localmente
+7. Analizza risultati
 ```
 
-### 3. Train on Colab
-
-See `scripts/colab_bootstrap.md` for complete Colab setup. Quick version:
+### Training su Colab
 
 ```python
-# In Colab
+# Setup
 !git clone https://github.com/<USER>/verifoto-dl.git && cd verifoto-dl
 !pip install -q -r requirements.txt
 
 from google.colab import drive
 drive.mount('/content/drive')
 
-# Run training
+# Training
 !python -m src.train \
     --config configs/baseline.yaml \
-    --run_name "2026-02-16_baseline" \
+    --run_name "2026-02-17_baseline" \
     --checkpoint_dir "/content/drive/MyDrive/verifoto_checkpoints"
 ```
 
-### 4. Analyze Results
+**Importante**: Aggiorna `dataset_root` in `configs/baseline.yaml` con il tuo path su Drive.
+
+### Analisi Risultati
 
 ```bash
-# Pull results
+# Pull risultati
 git pull
 
-# Compare all runs
+# Confronta tutti i run
 python scripts/compare_runs.py
 
-# View specific run
+# Analizza run specifico
+python scripts/analyze_results.py <run_name>
+
+# Visualizza metriche
 cat outputs/runs/<run_name>/metrics.json
 ```
 
-For detailed workflow, see `docs/WORKFLOW.md`.
-
-## CLI Usage
+## Comandi Principali
 
 ### Training
 
 ```bash
 python -m src.train \
     --config configs/baseline.yaml \
-    --run_name "2026-02-16_baseline1" \
+    --run_name "2026-02-17_exp1" \
     --checkpoint_dir "/content/drive/MyDrive/verifoto_checkpoints"
 ```
 
@@ -103,93 +98,112 @@ python -m src.train \
 ```bash
 python -m src.eval \
     --config configs/baseline.yaml \
-    --run_name "2026-02-16_eval" \
+    --run_name "2026-02-17_eval" \
     --checkpoint_path "/path/to/checkpoint.pt" \
     --threshold 0.5
 ```
 
-## Output Format
+### Quick Test (debug veloce)
 
-Each run creates:
+```bash
+python -m src.train \
+    --config configs/quick_test.yaml \
+    --run_name "debug" \
+    --checkpoint_dir "checkpoints"
+```
+
+## Output di Ogni Run
 
 ```
 outputs/runs/<run_name>/
-├── metrics.json       # All metrics + config
-├── notes.md           # Human-readable summary
-├── predictions.csv    # All predictions with metadata
-├── group_metrics_food.csv        # Metrics by food category
-├── group_metrics_defect.csv      # Metrics by defect type
-├── group_metrics_generator.csv   # Metrics by generator
-├── group_metrics_quality.csv     # Metrics by quality
-├── top_false_positives.csv       # Top FP errors
-├── top_false_negatives.csv       # Top FN errors
-├── cm.png             # Confusion matrix
-├── roc_curve.png      # ROC curve
-├── pr_curve.png       # Precision-Recall curve
-└── prob_dist.png      # Probability distribution
+├── metrics.json                      # Metriche complete + config
+├── notes.md                          # Riepilogo human-readable
+├── predictions.csv                   # Tutte le predizioni con metadati
+├── group_metrics_food.csv            # Metriche per categoria cibo
+├── group_metrics_defect.csv          # Metriche per tipo difetto
+├── group_metrics_generator.csv       # Metriche per generatore
+├── group_metrics_quality.csv         # Metriche per qualità
+├── top_false_positives.csv           # Top 50 errori FP
+├── top_false_negatives.csv           # Top 50 errori FN
+├── cm.png                            # Confusion matrix
+├── roc_curve.png                     # ROC curve
+├── pr_curve.png                      # Precision-Recall curve
+└── prob_dist.png                     # Distribuzione probabilità
 ```
 
-See `docs/AUGMENTED_V6_DATASET.md` for details on metadata and analysis.
+## Configurazione
 
-### metrics.json Structure
+Modifica `configs/baseline.yaml` per cambiare:
 
-```json
-{
-  "run_name": "2026-02-16_baseline1",
-  "git_commit": "abc123...",
-  "timestamp": "2026-02-16 14:30:00",
-  "threshold": 0.5,
-  "test_metrics": {
-    "acc": 0.95,
-    "prec": 0.93,
-    "rec": 0.91,
-    "f1": 0.92,
-    "pr_auc": 0.96,
-    "roc_auc": 0.97
-  },
-  "confusion_matrix": [[tn, fp], [fn, tp]],
-  "config": {...}
-}
+```yaml
+model_name: "efficientnet_b3"    # o "convnext_tiny", "resnet50"
+batch_size: 16
+epochs_head: 5
+epochs_finetune: 30
+lr_head: 0.001
+lr_finetune: 0.0001
+dataset_root: "/path/to/your/dataset"
 ```
 
-## Configuration
+## Dataset augmented_v6
 
-Edit `configs/baseline.yaml` to change:
+Il progetto supporta il dataset gerarchico `augmented_v6` con metadati dettagliati:
 
-- Model architecture (`model_name`)
-- Training hyperparameters
-- Data augmentation (edit `src/utils/data.py`)
-- Dataset path
+```
+augmented_v6/
+├── originali/
+│   ├── buono/<food>/<defect>/
+│   └── cattivo/<food>/<defect>/
+└── modificate/<food>/<defect>/<generator>/
+```
 
-## Key Features
+Questo permette analisi approfondite degli errori per categoria, tipo difetto, e generatore.
 
-- **Reproducible**: Fixed seeds, git commit tracking
-- **Efficient**: Checkpoints on Drive, only lightweight results on GitHub
-- **Fast iteration**: Pull code changes in Colab, no manual file copying
-- **AI-friendly output**: Structured JSON for easy parsing
-- **Group-aware splitting**: Prevents data leakage from near-duplicates
-- **Metadata tracking**: Analyze errors by food category, defect type, generator
-- **Conservative approach**: Optimized for high precision (low false positives)
+## Features Chiave
 
-## Production Context
+- **Riproducibile**: Seed fissi, tracking commit git
+- **Efficiente**: Checkpoint su Drive, solo risultati leggeri su GitHub
+- **Iterazione veloce**: Pull modifiche codice in Colab, no copia manuale file
+- **Output strutturato**: JSON per parsing facile
+- **Split group-aware**: Previene data leakage da near-duplicates
+- **Tracking metadati**: Analizza errori per categoria, difetto, generatore
+- **Approccio conservativo**: Ottimizzato per alta precision (bassi falsi positivi)
 
-This model will be deployed in the Verifoto-AI web app where:
-- Restaurants upload suspicious images
-- Model provides confidence score + technical indicators
-- LLM generates human-readable explanation
-- Report used for internal decision-making
-- **False positives damage trust** → precision is critical
+## Contesto Produzione
+
+Questo modello sarà deployato nella web app Verifoto-AI dove:
+- I ristoranti caricano immagini sospette
+- Il modello fornisce confidence score + indicatori tecnici
+- Un LLM genera spiegazione human-readable
+- Il report è usato per decisioni interne
+- **I falsi positivi danneggiano la fiducia** → precision è critica
 
 ## Tips
 
-1. **Multiple experiments**: Create `configs/experiment2.yaml` for different setups
-2. **Threshold tuning**: Use `eval.py` with different `--threshold` values
-3. **Quick tests**: Reduce `epochs_head` and `epochs_finetune` in config for fast debugging
-4. **Drive organization**: Keep checkpoints organized by date/experiment name
+1. **Esperimenti multipli**: Crea `configs/experiment2.yaml` per setup diversi
+2. **Tuning threshold**: Usa `eval.py` con diversi valori `--threshold`
+3. **Test veloci**: Riduci `epochs_head` e `epochs_finetune` nel config per debug
+4. **Organizzazione Drive**: Mantieni checkpoint organizzati per data/nome esperimento
+
+## Troubleshooting
+
+| Problema | Soluzione |
+|----------|-----------|
+| "Dataset not found" | Aggiorna `dataset_root` nel config YAML |
+| "Out of memory" | Riduci `batch_size` nel config |
+| "No GPU" | Runtime → Change runtime type → GPU |
+| "Module not found" | `!pip install -r requirements.txt` |
+
+## Documentazione Tecnica
+
+Per dettagli tecnici approfonditi, vedi:
+- `docs/WORKFLOW.md` - Workflow dettagliato
+- `docs/AUGMENTED_V6_DATASET.md` - Formato dataset
+- `.kiro/steering/` - Contesto per AI assistant
 
 ## Requirements
 
 - Python 3.8+
 - PyTorch 2.0+
-- CUDA-capable GPU (for training)
-- Google Drive (for checkpoint storage)
+- GPU CUDA (per training)
+- Google Drive (per storage checkpoint)

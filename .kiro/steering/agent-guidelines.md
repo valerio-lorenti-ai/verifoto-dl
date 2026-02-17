@@ -5,10 +5,12 @@ inclusion: auto
 # Agent Working Guidelines
 
 ## Documentation Philosophy
-- **Centralize**: All agent docs in `.kiro/agent/`, NOT project root
+- **Centralize**: Agent docs in `.kiro/agent/` and `.kiro/notes/`, NOT project root
 - **Minimize**: Few well-maintained files > many scattered files
+- **User docs**: Only README.md + docs/WORKFLOW.md (if needed)
 - **Update**: Keep existing docs current instead of creating new ones
 - **Brevity**: Short, actionable content only
+- **Separation**: Human docs (README) vs AI docs (.kiro/)
 
 ## Code Modifications
 - **Test first**: Use `configs/quick_test.yaml` for fast verification
@@ -17,10 +19,12 @@ inclusion: auto
 - **No breaking changes**: Unless explicitly requested
 
 ## File Management
-- **User docs**: Only in `docs/` (for end users)
-- **Agent context**: Only in `.kiro/agent/` (for AI assistant)
-- **Root files**: Minimize - only essential project files
+- **User docs**: README.md (main), docs/WORKFLOW.md (detailed), docs/AUGMENTED_V6_DATASET.md (reference)
+- **Agent context**: `.kiro/agent/` for current work, `.kiro/notes/` for technical logs
+- **Technical reference**: `docs/technical/` for architecture, migrations (not for daily reading)
+- **Root files**: Minimize - only essential project files (README, requirements, configs)
 - **Update vs Create**: Always prefer updating existing files
+- **No proliferation**: Don't create new markdown files in root
 
 ## Communication Style
 - **Concise**: Brief explanations, no verbose summaries

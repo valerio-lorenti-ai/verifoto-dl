@@ -1,212 +1,93 @@
-# Kiro Steering Structure - Usage Guide
+# Kiro Usage Guide
 
-## Overview
+## Struttura Documentazione
 
-Questa struttura organizza il contesto di lavoro dell'agente AI in modo leggero e mantenibile.
+### Per l'utente (lettura umana)
+- `README.md` - Documento principale con tutto l'essenziale
+- `docs/WORKFLOW.md` - Workflow dettagliato (se necessario)
+- `docs/AUGMENTED_V6_DATASET.md` - Formato dataset
+- `docs/technical/` - Documentazione tecnica di riferimento (versionata)
+
+### Per Kiro (uso interno)
+- `.kiro/steering/` - Contesto sempre incluso (project context, code standards)
+- `.kiro/notes/` - Appunti tecnici, log, decisioni (NON versionato)
+- `.kiro/agent/` - Stato lavoro corrente (NON versionato)
 
 ## Directory Structure
 
 ```
 .kiro/
-├── steering/              # Linee guida permanenti (auto-incluse)
-│   ├── project-context.md      # Contesto progetto tecnico
-│   ├── domain-context.md       # Contesto dominio business
-│   ├── agent-guidelines.md     # Come lavora l'agente
-│   └── code-standards.md       # Standard Python
+├── steering/              # Auto-incluso in ogni conversazione
+│   ├── project-context.md
+│   ├── domain-context.md
+│   ├── agent-guidelines.md
+│   └── code-standards.md
 │
-├── agent/                 # Contesto di lavoro (NON versionato)
-│   ├── status.md               # Stato corrente (aggiornato frequentemente)
-│   ├── decisions.md            # Decisioni architetturali
-│   └── README.md               # Guida ai file agent
+├── notes/                 # Appunti interni (NON versionato)
+│   ├── best_practices.md
+│   ├── data_leakage_audit.md
+│   ├── colab_workflow.md
+│   └── ...
+│
+├── agent/                 # Stato corrente (NON versionato)
+│   ├── status.md
+│   └── decisions.md
 │
 └── USAGE.md              # Questa guida
 ```
 
-## File Purposes
+## Principi
 
-### Steering Files (Permanenti)
-Questi file definiscono come l'agente deve lavorare. Cambiano raramente.
+1. **Minimalismo**: Pochi documenti per l'utente, chiari e stabili
+2. **Separazione**: Documentazione umana vs documentazione AI
+3. **No frammentazione**: Aggiornare documenti esistenti, non crearne di nuovi
+4. **Uso steering**: Per contesto progetto e best practices sempre disponibili
+5. **Notes per appunti**: Log tecnici e decisioni in .kiro/notes/
 
-**project-context.md**
-- Panoramica tecnica progetto
-- Struttura directory
-- Workflow generale
-- Tech stack
-- Auto-incluso in ogni conversazione
-
-**domain-context.md**
-- Contesto business (Verifoto-AI)
-- Problema del fraud detection
-- Approccio conservativo
-- Considerazioni etiche
-- Auto-incluso in ogni conversazione
-
-**agent-guidelines.md**
-- Filosofia documentazione
-- Regole di lavoro
-- Cosa fare/non fare
-- Auto-incluso in ogni conversazione
-
-**code-standards.md**
-- Standard Python
-- Convenzioni PyTorch
-- Best practices
-- Auto-incluso quando si modificano file .py
-
-### Agent Files (Dinamici)
-Questi file tracciano lo stato del lavoro. Aggiornati frequentemente.
-
-**status.md**
-- Stato corrente del lavoro
-- Completamenti recenti
-- Prossimi task
-- Note importanti
-- **Aggiorna questo spesso!**
-
-**decisions.md**
-- Decisioni architetturali
-- Rationale delle scelte
-- Alternative rifiutate
-- Considerazioni future
-- Aggiorna quando fai scelte importanti
-
-## How It Works
-
-### Auto-Inclusion
-I file in `steering/` con `inclusion: auto` sono automaticamente inclusi nel contesto quando:
-- `project-context.md`: Sempre (overview tecnico)
-- `domain-context.md`: Sempre (contesto business)
-- `agent-guidelines.md`: Sempre (regole di lavoro)
-- `code-standards.md`: Quando si modificano file .py
-
-### Manual Reference
-I file in `agent/` sono letti manualmente quando serve:
-- All'inizio di una sessione: leggi `status.md`
-- Durante il lavoro: aggiorna `status.md`
-- Per decisioni importanti: aggiungi a `decisions.md`
-
-## Workflow Example
+## Workflow
 
 ### Starting Work
-```
-1. Leggi .kiro/agent/status.md per contesto
+1. Leggi `.kiro/agent/status.md` per contesto
 2. Steering files già inclusi automaticamente
-3. Inizia il lavoro
-```
+3. Consulta `.kiro/notes/` se serve riferimento tecnico
 
 ### During Work
-```
 1. Fai modifiche al codice
-2. Aggiorna .kiro/agent/status.md con progressi
-3. Se fai scelte architetturali, aggiungi a decisions.md
-```
+2. Aggiorna `.kiro/agent/status.md` con progressi
+3. Se fai scelte architetturali, aggiungi a `decisions.md`
 
 ### Completing Work
-```
-1. Aggiorna status.md con completamento
+1. Aggiorna `status.md` con completamento
 2. Nota eventuali issue o next steps
-3. NON creare nuovi file di summary
-```
-
-## Key Principles
-
-### 1. Centralizzazione
-- Tutto il contesto agente in `.kiro/`
-- Niente file sparsi nella root
-- Documentazione utente solo in `docs/`
-
-### 2. Minimalismo
-- 3 steering files (permanenti)
-- 2 agent files (dinamici)
-- Aggiorna invece di creare
-
-### 3. Brevità
-- File corti e focalizzati
-- Niente verbosità
-- Solo info actionable
-
-### 4. Manutenibilità
-- Pochi file ben mantenuti
-- Aggiornamenti frequenti
-- Niente file obsoleti
+3. **NON creare nuovi file markdown nella root**
 
 ## What Goes Where
 
-### User Documentation (docs/)
-- Guide dettagliate per utenti
-- Tutorial e workflow
-- Reference documentation
-- **Per umani che usano il progetto**
+### User Documentation
+- `README.md` - Unico documento principale
+- `docs/WORKFLOW.md` - Solo se serve guida dettagliata
+- `docs/technical/` - Reference tecnica (non lettura quotidiana)
 
-### Agent Context (.kiro/agent/)
-- Stato del lavoro
-- Decisioni tecniche
-- Note di sviluppo
-- **Per AI assistant**
-
-### Steering (.kiro/steering/)
-- Linee guida permanenti
-- Standard di codice
-- Contesto progetto
-- **Per AI assistant (auto-incluso)**
+### Kiro Internal
+- `.kiro/steering/` - Contesto permanente (auto-incluso)
+- `.kiro/notes/` - Appunti, log, audit (non versionato)
+- `.kiro/agent/` - Stato lavoro (non versionato)
 
 ### Project Root
 - Solo file essenziali progetto
-- README, QUICKSTART
-- NO summary o changelog temporanei
+- NO summary, changelog, checklist temporanei
 
-## Anti-Patterns to Avoid
+## Anti-Patterns
 
 ❌ Creare file markdown nella root dopo ogni task
 ❌ Generare summary verbose
 ❌ Duplicare informazioni tra file
 ❌ Creare nuovi file invece di aggiornare esistenti
-❌ Mettere contesto agente in docs/
 
 ## Best Practices
 
 ✅ Aggiorna status.md frequentemente
-✅ Mantieni file brevi e focalizzati
-✅ Usa steering files come reference
+✅ Mantieni README.md come unico documento utente
+✅ Usa .kiro/notes/ per appunti tecnici
 ✅ Centralizza tutto in .kiro/
 ✅ Testa modifiche con quick_test.yaml
-
-## Example Updates
-
-### After Code Change
-```markdown
-# In .kiro/agent/status.md
-
-## Recent Completion
-✅ Added metadata extraction to dataset parser
-- Modified src/utils/data.py
-- Added food_category, defect_type fields
-- Tested with quick_test.yaml
-
-## Next
-- May need to adjust parser for edge cases
-- Consider adding validation
-```
-
-### After Architectural Decision
-```markdown
-# In .kiro/agent/decisions.md
-
-### Metadata Storage
-**Decision**: Store metadata in DataFrame, pass through DataLoader
-**Rationale**: 
-- No manual annotation needed
-- Available at inference
-- Easy to filter/group
-```
-
-## Summary
-
-Questa struttura ti permette di:
-- Avere contesto sempre disponibile (steering auto-incluso)
-- Tracciare stato del lavoro (agent/status.md)
-- Documentare decisioni (agent/decisions.md)
-- Mantenere tutto organizzato e leggero
-- Evitare proliferazione di file
-
-**Ricorda**: Pochi file ben mantenuti > molti file sparsi.

@@ -85,3 +85,4 @@ outputs/runs/**/*.npz
 
 # Agent context (AI assistant working files)
 .kiro/agent/
+.kiro/notes/
