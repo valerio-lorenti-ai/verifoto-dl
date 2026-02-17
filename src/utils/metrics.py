@@ -22,7 +22,7 @@ def predict_proba(model, loader: DataLoader, device):
         y_true: array di label vere
         metadata: lista di dict con metadati per ogni sample
     """
-    model.eval()
+    model.eval()  # CRITICAL: Disabilita dropout e usa running stats per batch norm
     logits_all, y_all, metadata_all = [], [], []
     
     for x, y, meta_batch in loader:
@@ -62,6 +62,58 @@ def compute_metrics_from_probs(probs: np.ndarray, y_true: np.ndarray, threshold=
         "prec_macro": prec_m, "rec_macro": rec_m, "f1_macro": f1_m,
         "roc_auc": roc_auc, "pr_auc": pr_auc
     }
+
+
+def find_optimal_threshold(probs: np.ndarray, y_true: np.ndarray, metric='f1', 
+                           min_thresh=0.1, max_thresh=0.9, step=0.05):
+    """
+    Trova threshold ottimale su validation set.
+    
+    IMPORTANTE: Usa SOLO su validation set, MAI su test set!
+    
+    Args:
+        probs: probabilità predette
+        y_true: label vere
+        metric: metrica da ottimizzare ('f1', 'precision', 'recall', 'accuracy')
+        min_thresh, max_thresh, step: range di threshold da testare
+    
+    Returns:
+        best_threshold: threshold ottimale
+        best_score: score migliore ottenuto
+        threshold_scores: dict con score per ogni threshold (per plotting)
+    """
+    thresholds = np.arange(min_thresh, max_thresh + step, step)
+    scores = []
+    
+    for thresh in thresholds:
+        y_pred = (probs >= thresh).astype(np.int32)
+        
+        if metric == 'f1':
+            score = precision_recall_fscore_support(y_true, y_pred, average="binary", zero_division=0)[2]
+        elif metric == 'precision':
+            score = precision_recall_fscore_support(y_true, y_pred, average="binary", zero_division=0)[0]
+        elif metric == 'recall':
+            score = precision_recall_fscore_support(y_true, y_pred, average="binary", zero_division=0)[1]
+        elif metric == 'accuracy':
+            score = accuracy_score(y_true, y_pred)
+        else:
+            raise ValueError(f"Unknown metric: {metric}")
+        
+        scores.append(score)
+    
+    best_idx = np.argmax(scores)
+    best_threshold = thresholds[best_idx]
+    best_score = scores[best_idx]
+    
+    threshold_scores = {
+        'thresholds': thresholds.tolist(),
+        'scores': scores,
+        'best_threshold': float(best_threshold),
+        'best_score': float(best_score),
+        'metric': metric
+    }
+    
+    return best_threshold, best_score, threshold_scores
 
 
 class EarlyStopping:

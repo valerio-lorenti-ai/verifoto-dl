@@ -13,7 +13,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.utils.data import (
-    parse_augmented_v6_dataset, stratified_group_split_v6,
+    parse_augmented_v6_dataset, group_based_split_v6,
     build_transforms, ImageBinaryDataset
 )
 from src.utils.model import build_model
@@ -80,8 +80,8 @@ def main():
     print("\n=== Loading dataset ===")
     df = parse_augmented_v6_dataset(dataset_root)
     
-    # Split (use same seed for reproducibility)
-    _, _, test_df = stratified_group_split_v6(
+    # Split (use same seed for reproducibility - group-based to prevent leakage)
+    _, _, test_df = group_based_split_v6(
         df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
     )
     print(f"Test set: {len(test_df)}")

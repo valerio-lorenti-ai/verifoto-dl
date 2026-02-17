@@ -17,13 +17,13 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from src.utils.data import (
-    parse_augmented_v6_dataset, stratified_group_split_v6,
+    parse_augmented_v6_dataset, group_based_split_v6,
     build_transforms, ImageBinaryDataset
 )
 from src.utils.model import build_model, set_backbone_trainable
 from src.utils.metrics import (
     predict_proba, compute_metrics_from_probs, compute_group_metrics,
-    get_top_errors, EarlyStopping
+    get_top_errors, EarlyStopping, find_optimal_threshold
 )
 from src.utils.visualization import plot_prob_distributions, plot_roc_pr, plot_confusion_matrix
 from sklearn.metrics import confusion_matrix
@@ -136,8 +136,10 @@ def main():
     print("\n=== Loading dataset ===")
     df = parse_augmented_v6_dataset(dataset_root)
     
-    # Split
-    train_df, val_df, test_df = stratified_group_split_v6(
+    # Split with group-based method to prevent data leakage
+    print("\n⚠️  Using GROUP-BASED split to prevent data leakage")
+    print("   (photos with multiple versions stay in same split)")
+    train_df, val_df, test_df = group_based_split_v6(
         df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
     )
     
@@ -237,9 +239,27 @@ def main():
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
 
+    # Get predictions on validation set to find optimal threshold
+    print("\n=== Finding Optimal Threshold on Validation Set ===")
+    val_probs, val_true, _ = predict_proba(model, val_loader, device)
+    optimal_threshold, best_f1, threshold_info = find_optimal_threshold(
+        val_probs, val_true, metric='f1'
+    )
+    print(f"Optimal threshold (F1): {optimal_threshold:.3f} (F1={best_f1:.4f})")
+    
+    # Also find threshold for precision target (e.g., precision > 0.90)
+    optimal_threshold_prec, best_prec, _ = find_optimal_threshold(
+        val_probs, val_true, metric='precision'
+    )
+    print(f"Optimal threshold (Precision): {optimal_threshold_prec:.3f} (Prec={best_prec:.4f})")
+    
+    # Use F1-optimal threshold for test evaluation
+    test_threshold = optimal_threshold
+    print(f"\nUsing threshold={test_threshold:.3f} for test evaluation")
+
     test_probs, test_true, test_metadata = predict_proba(model, test_loader, device)
-    test_metrics = compute_metrics_from_probs(test_probs, test_true, threshold=0.5)
-    test_cm = confusion_matrix(test_true, (test_probs >= 0.5).astype(int), labels=[0, 1])
+    test_metrics = compute_metrics_from_probs(test_probs, test_true, threshold=test_threshold)
+    test_cm = confusion_matrix(test_true, (test_probs >= test_threshold).astype(int), labels=[0, 1])
 
     print(f"Test metrics: {test_metrics}")
 
@@ -248,7 +268,7 @@ def main():
         'path': [m['path'] for m in test_metadata],
         'y_true': test_true,
         'y_prob': test_probs,
-        'y_pred': (test_probs >= 0.5).astype(int),
+        'y_pred': (test_probs >= test_threshold).astype(int),
         'source': [m.get('source') for m in test_metadata],
         'quality': [m.get('quality') for m in test_metadata],
         'food_category': [m.get('food_category') for m in test_metadata],
@@ -264,22 +284,22 @@ def main():
     print("\n=== Computing group metrics ===")
     
     # Per food_category
-    group_food = compute_group_metrics(predictions_df, 'food_category', threshold=0.5)
+    group_food = compute_group_metrics(predictions_df, 'food_category', threshold=test_threshold)
     group_food.to_csv(output_dir / "group_metrics_food.csv", index=False)
     print(f"✓ Saved group_metrics_food.csv ({len(group_food)} groups)")
     
     # Per defect_type
-    group_defect = compute_group_metrics(predictions_df, 'defect_type', threshold=0.5)
+    group_defect = compute_group_metrics(predictions_df, 'defect_type', threshold=test_threshold)
     group_defect.to_csv(output_dir / "group_metrics_defect.csv", index=False)
     print(f"✓ Saved group_metrics_defect.csv ({len(group_defect)} groups)")
     
     # Per generator (solo modificate)
-    group_generator = compute_group_metrics(predictions_df, 'generator', threshold=0.5)
+    group_generator = compute_group_metrics(predictions_df, 'generator', threshold=test_threshold)
     group_generator.to_csv(output_dir / "group_metrics_generator.csv", index=False)
     print(f"✓ Saved group_metrics_generator.csv ({len(group_generator)} groups)")
     
     # Per quality (solo originali)
-    group_quality = compute_group_metrics(predictions_df, 'quality', threshold=0.5)
+    group_quality = compute_group_metrics(predictions_df, 'quality', threshold=test_threshold)
     group_quality.to_csv(output_dir / "group_metrics_quality.csv", index=False)
     print(f"✓ Saved group_metrics_quality.csv ({len(group_quality)} groups)")
     
@@ -302,7 +322,8 @@ def main():
         "run_name": args.run_name,
         "git_commit": get_git_commit(),
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "threshold": 0.5,
+        "threshold": float(test_threshold),
+        "threshold_info": threshold_info,
         "test_metrics": {k: float(v) if not np.isnan(v) else None for k, v in test_metrics.items()},
         "confusion_matrix": test_cm.tolist(),
         "config": config
@@ -320,7 +341,11 @@ def main():
 - Batch size: {batch_size}
 - Epochs: {epochs_head} (head) + {epochs_finetune} (finetune)
 
-## Results (threshold=0.5)
+## Threshold Selection
+- Optimal threshold (F1 on validation): {test_threshold:.3f}
+- Validation F1 at optimal threshold: {best_f1:.4f}
+
+## Results (threshold={test_threshold:.3f})
 - Accuracy: {test_metrics['acc']:.4f}
 - Precision: {test_metrics['prec']:.4f}
 - Recall: {test_metrics['rec']:.4f}

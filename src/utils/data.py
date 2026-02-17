@@ -201,10 +201,207 @@ def label_of_path(p: str, non_dir: Path, frode_dir: Path) -> int:
     raise ValueError(f"Label non determinabile per: {p}")
 
 
+def extract_photo_id(path: str) -> str:
+    """
+    Estrae ID univoco della foto dal path, rimuovendo suffissi di manipolazione.
+    
+    Esempi:
+        originali/buono/pizza/pizza_001.jpg → pizza_001
+        modificate/pizza/bruciato/gpt/.../pizza_001_bruciato.jpg → pizza_001
+        modificate/pizza/crudo/gpt/.../bb31_q70.jpg → bb31
+    
+    Args:
+        path: path completo dell'immagine
+    
+    Returns:
+        photo_id: identificatore univoco della foto originale
+    """
+    filename = Path(path).stem  # Rimuove estensione
+    
+    # Lista di suffissi da rimuovere (manipolazioni, augmentations, etc.)
+    suffixes_to_remove = [
+        # Difetti
+        '_bruciato', '_crudo', '_marcio', '_ammuffito', '_insetti',
+        # Compressione
+        '_q50', '_q70', '_q95', '_q30', '_q85',
+        # Resize/crop
+        '_tiny_thumb', '_lowres_phone', '_highres_crop',
+        # Manipolazioni
+        '_whatsapp', '_rotate_recomp', '_double', '_noise_light', '_heavy',
+        # Platform
+        '_platform', '_instagram', '_facebook',
+        # Generatori (potrebbero essere nel nome)
+        '_gpt', '_dalle', '_midjourney'
+    ]
+    
+    # Rimuovi tutti i suffissi
+    for suffix in suffixes_to_remove:
+        filename = filename.replace(suffix, '')
+    
+    return filename
+
+
+def analyze_split_leakage(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame):
+    """
+    Analizza data leakage tra train/val/test sets.
+    Identifica foto che hanno versioni in multiple splits.
+    
+    Args:
+        train_df, val_df, test_df: DataFrames con colonna 'path'
+    
+    Returns:
+        dict con statistiche di leakage
+    """
+    # Estrai photo_id per ogni split
+    train_photos = set(train_df['path'].apply(extract_photo_id))
+    val_photos = set(val_df['path'].apply(extract_photo_id))
+    test_photos = set(test_df['path'].apply(extract_photo_id))
+    
+    # Calcola overlap
+    overlap_train_val = train_photos & val_photos
+    overlap_train_test = train_photos & test_photos
+    overlap_val_test = val_photos & test_photos
+    
+    # Statistiche
+    stats = {
+        'train_photos': len(train_photos),
+        'val_photos': len(val_photos),
+        'test_photos': len(test_photos),
+        'overlap_train_val': len(overlap_train_val),
+        'overlap_train_test': len(overlap_train_test),
+        'overlap_val_test': len(overlap_val_test),
+        'leakage_pct_val': len(overlap_train_val) / len(val_photos) * 100 if len(val_photos) > 0 else 0,
+        'leakage_pct_test': len(overlap_train_test) / len(test_photos) * 100 if len(test_photos) > 0 else 0,
+    }
+    
+    # Print report
+    print("\n" + "="*80)
+    print("DATA LEAKAGE ANALYSIS")
+    print("="*80)
+    print(f"Unique photos:")
+    print(f"  Train: {stats['train_photos']}")
+    print(f"  Val:   {stats['val_photos']}")
+    print(f"  Test:  {stats['test_photos']}")
+    print(f"\nOverlap (photos with versions in multiple splits):")
+    print(f"  Train-Val:  {stats['overlap_train_val']} ({stats['leakage_pct_val']:.1f}% of val)")
+    print(f"  Train-Test: {stats['overlap_train_test']} ({stats['leakage_pct_test']:.1f}% of test)")
+    print(f"  Val-Test:   {stats['overlap_val_test']}")
+    
+    if stats['overlap_train_test'] > 0:
+        print(f"\n🚨 DATA LEAKAGE DETECTED!")
+        print(f"  {stats['overlap_train_test']} photos have versions in BOTH train and test!")
+        print(f"  This can inflate test metrics by ~{stats['leakage_pct_test'] * 0.3:.1f}%")
+        print(f"  Use group_based_split_v6() to fix this issue.")
+    else:
+        print(f"\n✓ No data leakage detected between train and test sets.")
+    
+    print("="*80)
+    
+    return stats
+
+
+def group_based_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, test_ratio=0.15, seed=42):
+    """
+    Split stratificato che raggruppa versioni della stessa foto.
+    Garantisce che versioni della stessa foto NON finiscano in train E test.
+    
+    IMPORTANTE: Questo è il metodo CORRETTO per evitare data leakage.
+    
+    Args:
+        df: DataFrame con colonne path, label, food_category, etc.
+        train_ratio, val_ratio, test_ratio: proporzioni split
+        seed: random seed
+    
+    Returns:
+        train_df, val_df, test_df (senza overlap di foto)
+    """
+    assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6
+    
+    df = df.copy()
+    
+    # Estrai photo_id per ogni immagine
+    df['photo_id'] = df['path'].apply(extract_photo_id)
+    
+    # Raggruppa immagini per photo_id
+    photo_groups = df.groupby('photo_id').apply(lambda x: x.index.tolist()).to_dict()
+    
+    # Per ogni foto, determina label dominante e food_category
+    photo_meta = df.groupby('photo_id').agg({
+        'label': lambda x: x.mode()[0] if len(x.mode()) > 0 else x.iloc[0],  # Label più frequente
+        'food_category': 'first'  # Assume stessa categoria per tutte le versioni
+    }).reset_index()
+    
+    # Crea stratification key
+    photo_meta['strat_key'] = (photo_meta['label'].astype(str) + "_" + 
+                                 photo_meta['food_category'].fillna("unknown"))
+    
+    # Split per gruppo stratificato
+    train_photos, val_photos, test_photos = [], [], []
+    
+    for key, group in photo_meta.groupby('strat_key'):
+        photos = group['photo_id'].tolist()
+        n = len(photos)
+        
+        # Shuffle
+        rnd = random.Random(seed)
+        rnd.shuffle(photos)
+        
+        # Split
+        n_train = int(round(n * train_ratio))
+        n_val = int(round(n * val_ratio))
+        
+        train_photos.extend(photos[:n_train])
+        val_photos.extend(photos[n_train:n_train+n_val])
+        test_photos.extend(photos[n_train+n_val:])
+    
+    # Converti photo_id in indices
+    train_idx = [idx for photo in train_photos for idx in photo_groups[photo]]
+    val_idx = [idx for photo in val_photos for idx in photo_groups[photo]]
+    test_idx = [idx for photo in test_photos for idx in photo_groups[photo]]
+    
+    # Crea DataFrames
+    train_df = df.loc[train_idx].drop(columns=['photo_id', 'strat_key'], errors='ignore')
+    val_df = df.loc[val_idx].drop(columns=['photo_id', 'strat_key'], errors='ignore')
+    test_df = df.loc[test_idx].drop(columns=['photo_id', 'strat_key'], errors='ignore')
+    
+    # Shuffle finale
+    train_df = train_df.sample(frac=1, random_state=seed).reset_index(drop=True)
+    val_df = val_df.sample(frac=1, random_state=seed).reset_index(drop=True)
+    test_df = test_df.sample(frac=1, random_state=seed).reset_index(drop=True)
+    
+    # Verifica no overlap (CRITICAL ASSERTION)
+    train_photos_set = set(train_photos)
+    val_photos_set = set(val_photos)
+    test_photos_set = set(test_photos)
+    
+    assert len(train_photos_set & val_photos_set) == 0, "❌ OVERLAP train-val detected!"
+    assert len(train_photos_set & test_photos_set) == 0, "❌ OVERLAP train-test detected!"
+    assert len(val_photos_set & test_photos_set) == 0, "❌ OVERLAP val-test detected!"
+    
+    # Print report
+    print(f"\n" + "="*80)
+    print("GROUP-BASED SPLIT (No Data Leakage)")
+    print("="*80)
+    print(f"Unique photos: {len(photo_groups)}")
+    print(f"  Train: {len(train_photos)} photos ({len(train_df)} images, {train_df['label'].mean():.3f} pos rate)")
+    print(f"  Val:   {len(val_photos)} photos ({len(val_df)} images, {val_df['label'].mean():.3f} pos rate)")
+    print(f"  Test:  {len(test_photos)} photos ({len(test_df)} images, {test_df['label'].mean():.3f} pos rate)")
+    print(f"✓ No overlap verified - data leakage prevented")
+    print("="*80)
+    
+    return train_df, val_df, test_df
+
+
 def stratified_group_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, test_ratio=0.15, seed=42):
     """
+    DEPRECATED: This function has data leakage issues.
+    Use group_based_split_v6() instead.
+    
     Split stratificato per augmented_v6 dataset.
     Stratifica per label e food_category.
+    
+    ⚠️  WARNING: This split is RANDOM and does NOT prevent data leakage!
+    Photos with multiple versions can end up in both train and test sets.
     
     Args:
         df: DataFrame con colonne path, label, food_category, etc.
@@ -214,6 +411,9 @@ def stratified_group_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15
     Returns:
         train_df, val_df, test_df
     """
+    print("\n⚠️  WARNING: Using stratified_group_split_v6() which may have data leakage!")
+    print("   Consider using group_based_split_v6() instead for production.")
+    
     assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6
     
     # Crea stratification key: label + food_category
@@ -263,6 +463,9 @@ def stratified_group_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15
     print(f"  Train: {len(train_df)} ({train_df['label'].mean():.3f} pos rate)")
     print(f"  Val:   {len(val_df)} ({val_df['label'].mean():.3f} pos rate)")
     print(f"  Test:  {len(test_df)} ({test_df['label'].mean():.3f} pos rate)")
+    
+    # Analizza leakage
+    analyze_split_leakage(train_df, val_df, test_df)
     
     return train_df, val_df, test_df
 
