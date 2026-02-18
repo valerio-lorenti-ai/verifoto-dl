@@ -3,7 +3,7 @@
   "checkpoint": "/content/drive/MyDrive/verifoto_checkpoints/2026-02-18_noK3_noLeakage/best.pt",
   "test_mode": "external",
   "external_dataset": "/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca",
-  "timestamp": "2026-02-18 13:07:34",
+  "timestamp": "2026-02-18 13:18:33",
   "threshold": 0.1,
   "test_metrics": {
     "acc": 0.6233766233766234,
