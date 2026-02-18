@@ -79,11 +79,13 @@ def main():
     parser = argparse.ArgumentParser(description="Fine-tune with hard negative mining")
     parser.add_argument("--run", type=str, required=True, help="Path to run directory")
     parser.add_argument("--config", type=str, required=True, help="Path to config YAML")
+    parser.add_argument("--checkpoint_dir", type=str, default=None, 
+                       help="Override checkpoint directory (for Drive)")
     parser.add_argument("--epochs", type=int, default=5, help="Number of fine-tune epochs")
     parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate")
     parser.add_argument("--repeat_factor", type=float, default=3.0, 
                        help="Oversampling factor for hard negatives")
-    parser.add_argument("--output_suffix", type=str, default="_hn",
+    parser.add_argument("--output_suffix", type=str, default="_hard_negative",
                        help="Suffix for output run name")
     args = parser.parse_args()
     
@@ -166,7 +168,12 @@ def main():
     
     # Load model from checkpoint
     print("\n=== Loading model ===")
-    checkpoint_path = run_dir.parent.parent / "checkpoints" / run_dir.name / "best.pt"
+    
+    # Use checkpoint_dir if provided, otherwise default location
+    if args.checkpoint_dir:
+        checkpoint_path = Path(args.checkpoint_dir) / run_dir.name / "best.pt"
+    else:
+        checkpoint_path = run_dir.parent.parent / "checkpoints" / run_dir.name / "best.pt"
     
     if not checkpoint_path.exists():
         print(f"❌ Checkpoint not found: {checkpoint_path}")
@@ -197,7 +204,12 @@ def main():
     output_dir = run_dir.parent / f"{run_dir.name}{args.output_suffix}"
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    checkpoint_dir = run_dir.parent.parent / "checkpoints" / f"{run_dir.name}{args.output_suffix}"
+    # Use checkpoint_dir if provided, otherwise default location
+    if args.checkpoint_dir:
+        checkpoint_dir = Path(args.checkpoint_dir) / f"{run_dir.name}{args.output_suffix}"
+    else:
+        checkpoint_dir = run_dir.parent.parent / "checkpoints" / f"{run_dir.name}{args.output_suffix}"
+    
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     best_ckpt_path = checkpoint_dir / "best.pt"
     
