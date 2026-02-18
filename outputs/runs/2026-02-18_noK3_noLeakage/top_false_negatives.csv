@@ -1,0 +1,2 @@
+path,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator
+/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.2_noK/modificate/burger_panino/marcio/gpt_image_1_5/d660_tiny_thumb.jpg,1,0.09516063,0,modificate,,burger_panino,marcio,gpt_image_1_5

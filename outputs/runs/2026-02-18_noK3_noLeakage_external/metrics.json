@@ -1,0 +1,47 @@
+{
+  "run_name": "2026-02-18_noK3_noLeakage_external",
+  "checkpoint": "/content/drive/MyDrive/verifoto_checkpoints/2026-02-18_noK3_noLeakage/best.pt",
+  "test_mode": "external",
+  "external_dataset": "/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca",
+  "timestamp": "2026-02-18 13:07:34",
+  "threshold": 0.1,
+  "test_metrics": {
+    "acc": 0.6233766233766234,
+    "prec": 0.3488372093023256,
+    "rec": 0.9375,
+    "f1": 0.5084745762711864,
+    "prec_macro": 0.6597127222982216,
+    "rec_macro": 0.7392418032786885,
+    "f1_macro": 0.6016057091882248,
+    "roc_auc": 0.8114754098360655,
+    "pr_auc": 0.46496088334323626
+  },
+  "confusion_matrix": [
+    [
+      33,
+      28
+    ],
+    [
+      1,
+      15
+    ]
+  ],
+  "config": {
+    "batch_size": 16,
+    "checkpoint_dir": "checkpoints",
+    "dataset_root": "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.2_noK",
+    "drop_rate": 0.2,
+    "epochs_finetune": 25,
+    "epochs_head": 5,
+    "img_size": 224,
+    "lr_finetune": 0.0001,
+    "lr_head": 0.0003,
+    "max_grad_norm": 1.0,
+    "model_name": "efficientnet_b0",
+    "monitor": "pr_auc",
+    "output_dir": "outputs/runs",
+    "patience": 6,
+    "seed": 42,
+    "weight_decay": 0.001
+  }
+}

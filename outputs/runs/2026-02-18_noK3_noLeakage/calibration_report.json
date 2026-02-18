@@ -1,0 +1,9 @@
+{
+  "ece_before": 0.2560629697878757,
+  "ece_after": 0.25606297140687023,
+  "ece_improvement": -1.6189945495348468e-09,
+  "overconfident_negatives_before": 137,
+  "overconfident_negatives_after": 137,
+  "underconfident_positives_before": 0,
+  "underconfident_positives_after": 0
+}

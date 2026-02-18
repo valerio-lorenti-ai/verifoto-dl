@@ -1,0 +1,6 @@
+{
+  "temperature": 1.0,
+  "method": "temperature_scaling",
+  "optimized_on": "validation_set",
+  "metric": "negative_log_likelihood"
+}

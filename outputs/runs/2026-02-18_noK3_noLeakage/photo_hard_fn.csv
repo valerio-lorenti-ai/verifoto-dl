@@ -1,0 +1,2 @@
+photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
+dca1,1,0.63625924625,0,modificate,,pizza,bruciato,gpt_image_1_5,0.63625924625,0.20595863983860718,0.39174142,0.94092625,8
