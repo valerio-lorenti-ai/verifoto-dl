@@ -1,0 +1,7 @@
+path,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/screenshots/Screenshot 2026-02-13 194616.png,0,0.98422664,1,originali,screenshots,Screenshot 2026-02-13 194616.png,,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/buone/internet/WhatsApp Image 2026-02-13 at 21.02.08.jpeg,0,0.96991605,1,originali,buone,internet,,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/buone/internet/WhatsApp Image 2026-02-13 at 21.02.08 (1).jpeg,0,0.9334207,1,originali,buone,internet,,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/buone/internet/WhatsApp Image 2026-02-13 at 21.02.11.jpeg,0,0.8322539,1,originali,buone,internet,,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/buone/internet/WhatsApp Image 2026-02-13 at 21.02.10 (3).jpeg,0,0.80142486,1,originali,buone,internet,,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/buone/internet/WhatsApp Image 2026-02-13 at 21.02.11 (1).jpeg,0,0.71945405,1,originali,buone,internet,,

@@ -1,0 +1,4 @@
+quality,n_samples,n_pos,n_neg,accuracy,precision,recall,f1,roc_auc,pr_auc,tp,fp,tn,fn
+buone,54,0,54,0.9074074074074074,0.0,0.0,0.0,,,0,5,49,0
+cattive,4,0,4,1.0,0.0,0.0,0.0,,,0,0,4,0
+screenshots,3,0,3,0.6666666666666666,0.0,0.0,0.0,,,0,1,2,0
