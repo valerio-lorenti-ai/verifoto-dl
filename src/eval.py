@@ -57,6 +57,8 @@ def main():
     parser.add_argument("--run_name", type=str, required=True, help="Run name for output")
     parser.add_argument("--checkpoint_path", type=str, required=True, help="Path to checkpoint .pt file")
     parser.add_argument("--threshold", type=float, default=0.5, help="Classification threshold")
+    parser.add_argument("--external_test_dataset", type=str, default=None, 
+                        help="Path to external test dataset (completely separate from training data)")
     args = parser.parse_args()
 
     # Load config
@@ -68,23 +70,45 @@ def main():
     print(f"Device: {device}")
 
     # Paths
-    dataset_root = config['dataset_root']
     output_dir = Path(config.get('output_dir', 'outputs/runs')) / args.run_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Dataset: {dataset_root}")
     print(f"Checkpoint: {args.checkpoint_path}")
     print(f"Output: {output_dir}")
 
-    # Load data
-    print("\n=== Loading dataset ===")
-    df = parse_augmented_v6_dataset(dataset_root)
-    
-    # Split (use same seed for reproducibility - group-based to prevent leakage)
-    _, _, test_df = group_based_split_v6(
-        df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
-    )
-    print(f"Test set: {len(test_df)}")
+    # Load data - EXTERNAL TEST MODE or STANDARD MODE
+    if args.external_test_dataset:
+        # EXTERNAL TEST MODE: Use completely separate dataset
+        print("\n" + "="*80)
+        print("EXTERNAL TEST MODE")
+        print("="*80)
+        print(f"External test dataset: {args.external_test_dataset}")
+        print("⚠️  This dataset is COMPLETELY SEPARATE from training data")
+        print("   No internal split - using entire dataset as test set")
+        print("="*80)
+        
+        test_df = parse_augmented_v6_dataset(args.external_test_dataset)
+        print(f"\nExternal test set: {len(test_df)} images")
+        print(f"  Originali (label=0): {(test_df['label'] == 0).sum()}")
+        print(f"  Modificate (label=1): {(test_df['label'] == 1).sum()}")
+        
+    else:
+        # STANDARD MODE: Use internal split from training dataset
+        print("\n" + "="*80)
+        print("STANDARD TEST MODE")
+        print("="*80)
+        dataset_root = config['dataset_root']
+        print(f"Dataset: {dataset_root}")
+        print("Using internal test split from training dataset")
+        print("="*80)
+        
+        df = parse_augmented_v6_dataset(dataset_root)
+        
+        # Split (use same seed for reproducibility - group-based to prevent leakage)
+        _, _, test_df = group_based_split_v6(
+            df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+        )
+        print(f"\nInternal test set: {len(test_df)} images")
 
     # Dataset
     img_size = config.get('img_size', 224)
@@ -167,6 +191,8 @@ def main():
     metrics_output = {
         "run_name": args.run_name,
         "checkpoint": args.checkpoint_path,
+        "test_mode": "external" if args.external_test_dataset else "internal",
+        "external_dataset": args.external_test_dataset if args.external_test_dataset else None,
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "threshold": args.threshold,
         "test_metrics": {k: float(v) if not np.isnan(v) else None for k, v in test_metrics.items()},
@@ -178,7 +204,12 @@ def main():
         json.dump(metrics_output, f, indent=2)
 
     # Notes
+    test_mode_info = f"External dataset: {args.external_test_dataset}" if args.external_test_dataset else "Internal test split from training dataset"
+    
     notes = f"""# Evaluation: {args.run_name}
+
+## Test Mode
+{test_mode_info}
 
 ## Results (threshold={args.threshold})
 - Accuracy: {test_metrics['acc']:.4f}
