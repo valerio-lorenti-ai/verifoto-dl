@@ -241,11 +241,34 @@ def main():
 
     # Get predictions on validation set to find optimal threshold
     print("\n=== Finding Optimal Threshold on Validation Set ===")
-    val_probs, val_true, _ = predict_proba(model, val_loader, device)
+    val_probs, val_true, val_metadata = predict_proba(model, val_loader, device)
     optimal_threshold, best_f1, threshold_info = find_optimal_threshold(
         val_probs, val_true, metric='f1'
     )
     print(f"Optimal threshold (F1): {optimal_threshold:.3f} (F1={best_f1:.4f})")
+    
+    # Save validation predictions and logits for calibration
+    print("\n=== Saving Validation Predictions for Calibration ===")
+    val_predictions_df = pd.DataFrame({
+        'path': [m['path'] for m in val_metadata],
+        'y_true': val_true,
+        'y_prob': val_probs,
+        'y_pred': (val_probs >= optimal_threshold).astype(int),
+        'source': [m.get('source') for m in val_metadata],
+        'quality': [m.get('quality') for m in val_metadata],
+        'food_category': [m.get('food_category') for m in val_metadata],
+        'defect_type': [m.get('defect_type') for m in val_metadata],
+        'generator': [m.get('generator') for m in val_metadata]
+    })
+    val_predictions_df.to_csv(output_dir / "validation_predictions.csv", index=False)
+    print(f"✓ Saved validation_predictions.csv ({len(val_predictions_df)} samples)")
+    
+    # Save validation logits (for temperature scaling)
+    # Approximate logits from probabilities: logit = log(p / (1-p))
+    val_probs_clipped = np.clip(val_probs, 1e-7, 1 - 1e-7)
+    val_logits = np.log(val_probs_clipped / (1 - val_probs_clipped))
+    np.save(output_dir / "validation_logits.npy", val_logits)
+    print(f"✓ Saved validation_logits.npy for calibration")
     
     # Also find threshold for precision target (e.g., precision > 0.90)
     optimal_threshold_prec, best_prec, _ = find_optimal_threshold(

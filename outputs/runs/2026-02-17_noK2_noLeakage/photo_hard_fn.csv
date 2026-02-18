@@ -1,0 +1,4 @@
+photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
+426d,1,0.031654407499999995,0,modificate,,altro,crudo,gpt_image_1_mini,0.031654407499999995,0.03907669611772897,0.0057908855,0.1250576,8
+dca1,1,0.07522035334999999,0,modificate,,pizza,bruciato,gpt_image_1_5,0.07522035334999999,0.17843179671454143,0.0059617837,0.5164091,8
+0f3a,1,0.135451249875,0,modificate,,riso_paella,crudo,gpt_image_1_5,0.135451249875,0.0731418253004149,0.012739263,0.26007858,8
