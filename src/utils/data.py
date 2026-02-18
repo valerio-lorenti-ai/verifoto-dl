@@ -536,17 +536,42 @@ class RandomGaussianNoise:
         return Image.fromarray((arr * 255).astype(np.uint8))
 
 
-def build_transforms(img_size=224):
-    train_tf = transforms.Compose([
-        transforms.RandomResizedCrop(img_size, scale=(0.80, 1.0), ratio=(0.90, 1.10)),
-        transforms.RandomHorizontalFlip(p=0.3),
-        transforms.ColorJitter(brightness=0.10, contrast=0.10, saturation=0.05, hue=0.02),
-        transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.15),
-        RandomJPEGCompression(p=0.55),
-        RandomGaussianNoise(p=0.35),
-        transforms.ToTensor(),
-        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-    ])
+def build_transforms(img_size=224, augmentation_strength='normal'):
+    """
+    Build transforms con supporto per augmentation differenziata.
+    
+    Args:
+        img_size: dimensione immagine
+        augmentation_strength: 'normal' o 'strong'
+    
+    Returns:
+        train_tf, eval_tf
+    """
+    if augmentation_strength == 'strong':
+        # Augmentation più aggressiva (per immagini reali)
+        train_tf = transforms.Compose([
+            transforms.RandomResizedCrop(img_size, scale=(0.70, 1.0), ratio=(0.85, 1.15)),
+            transforms.RandomHorizontalFlip(p=0.4),
+            transforms.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.10, hue=0.03),
+            transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.25),
+            RandomJPEGCompression(quality_min=50, quality_max=95, p=0.65),
+            RandomGaussianNoise(sigma_max=0.03, p=0.45),
+            transforms.ToTensor(),
+            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+        ])
+    else:
+        # Augmentation normale
+        train_tf = transforms.Compose([
+            transforms.RandomResizedCrop(img_size, scale=(0.80, 1.0), ratio=(0.90, 1.10)),
+            transforms.RandomHorizontalFlip(p=0.3),
+            transforms.ColorJitter(brightness=0.10, contrast=0.10, saturation=0.05, hue=0.02),
+            transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.15),
+            RandomJPEGCompression(p=0.55),
+            RandomGaussianNoise(p=0.35),
+            transforms.ToTensor(),
+            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+        ])
+    
     eval_tf = transforms.Compose([
         transforms.Resize(int(img_size * 1.15)),
         transforms.CenterCrop(img_size),
@@ -557,17 +582,22 @@ def build_transforms(img_size=224):
 
 
 class ImageBinaryDataset(Dataset):
-    def __init__(self, df: pd.DataFrame, transform=None, img_size=224):
+    def __init__(self, df: pd.DataFrame, transform=None, img_size=224, 
+                 real_transform=None, use_differential_aug=False):
         """
-        Dataset per augmented_v6 con metadati.
+        Dataset per augmented_v6 con metadati e augmentation differenziata.
         
         Args:
             df: DataFrame con colonne path, label, source, quality, food_category, defect_type, generator
-            transform: torchvision transforms
+            transform: torchvision transforms (per immagini generate)
             img_size: dimensione immagine per fallback
+            real_transform: transforms specifici per immagini reali (opzionale)
+            use_differential_aug: se True, usa real_transform per immagini reali
         """
         self.df = df.reset_index(drop=True)
         self.transform = transform
+        self.real_transform = real_transform
+        self.use_differential_aug = use_differential_aug
         self.img_size = img_size
 
     def __len__(self):
@@ -584,7 +614,12 @@ class ImageBinaryDataset(Dataset):
         except Exception:
             img = Image.new("RGB", (self.img_size, self.img_size), (0, 0, 0))
         
-        if self.transform:
+        # Applica transform appropriato
+        if self.use_differential_aug and y == 0 and self.real_transform is not None:
+            # Immagine reale: usa real_transform (più aggressivo)
+            img = self.real_transform(img)
+        elif self.transform:
+            # Immagine generata o fallback: usa transform normale
             img = self.transform(img)
         
         # Metadati

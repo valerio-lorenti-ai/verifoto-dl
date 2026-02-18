@@ -116,6 +116,132 @@ def find_optimal_threshold(probs: np.ndarray, y_true: np.ndarray, metric='f1',
     return best_threshold, best_score, threshold_scores
 
 
+def find_cost_sensitive_threshold(probs: np.ndarray, y_true: np.ndarray, 
+                                   fp_cost=2.0, fn_cost=1.0,
+                                   min_thresh=0.1, max_thresh=0.9, step=0.05):
+    """
+    Trova threshold ottimale minimizzando costo totale.
+    
+    Utile quando FP e FN hanno costi diversi:
+    - FP (predire FRODE su immagine reale): costo alto
+    - FN (predire REALE su immagine generata): costo basso
+    
+    Args:
+        probs: probabilità predette
+        y_true: label vere
+        fp_cost: costo di un falso positivo
+        fn_cost: costo di un falso negativo
+        min_thresh, max_thresh, step: range di threshold da testare
+    
+    Returns:
+        best_threshold: threshold che minimizza costo totale
+        best_cost: costo minimo
+        threshold_info: dict con info per ogni threshold
+    """
+    thresholds = np.arange(min_thresh, max_thresh + step, step)
+    costs = []
+    fp_rates = []
+    fn_rates = []
+    
+    for thresh in thresholds:
+        y_pred = (probs >= thresh).astype(np.int32)
+        cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+        tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0, 0, 0, 0)
+        
+        # Calcola costo totale
+        total_cost = fp * fp_cost + fn * fn_cost
+        costs.append(total_cost)
+        
+        # Calcola tassi di errore
+        fp_rate = fp / (fp + tn) if (fp + tn) > 0 else 0
+        fn_rate = fn / (fn + tp) if (fn + tp) > 0 else 0
+        fp_rates.append(fp_rate)
+        fn_rates.append(fn_rate)
+    
+    best_idx = np.argmin(costs)
+    best_threshold = thresholds[best_idx]
+    best_cost = costs[best_idx]
+    
+    threshold_info = {
+        'thresholds': thresholds.tolist(),
+        'costs': costs,
+        'fp_rates': fp_rates,
+        'fn_rates': fn_rates,
+        'best_threshold': float(best_threshold),
+        'best_cost': float(best_cost),
+        'fp_cost': fp_cost,
+        'fn_cost': fn_cost
+    }
+    
+    return best_threshold, best_cost, threshold_info
+
+
+def find_threshold_with_max_fp_rate(probs: np.ndarray, y_true: np.ndarray,
+                                     max_fp_rate=0.10,
+                                     min_thresh=0.1, max_thresh=0.9, step=0.05):
+    """
+    Trova threshold massimo che rispetta un FP rate massimo.
+    
+    Utile quando vuoi garantire che FP rate <= max_fp_rate.
+    Tra tutti i threshold che rispettano il vincolo, sceglie quello con F1 più alto.
+    
+    Args:
+        probs: probabilità predette
+        y_true: label vere
+        max_fp_rate: massimo FP rate accettabile (es: 0.10 = 10%)
+        min_thresh, max_thresh, step: range di threshold da testare
+    
+    Returns:
+        best_threshold: threshold ottimale
+        best_f1: F1 score al threshold ottimale
+        threshold_info: dict con info per ogni threshold
+    """
+    thresholds = np.arange(min_thresh, max_thresh + step, step)
+    valid_thresholds = []
+    valid_f1s = []
+    fp_rates = []
+    
+    for thresh in thresholds:
+        y_pred = (probs >= thresh).astype(np.int32)
+        cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+        tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0, 0, 0, 0)
+        
+        # Calcola FP rate
+        fp_rate = fp / (fp + tn) if (fp + tn) > 0 else 0
+        fp_rates.append(fp_rate)
+        
+        # Se rispetta vincolo, calcola F1
+        if fp_rate <= max_fp_rate:
+            f1 = precision_recall_fscore_support(y_true, y_pred, average="binary", zero_division=0)[2]
+            valid_thresholds.append(thresh)
+            valid_f1s.append(f1)
+    
+    if len(valid_thresholds) == 0:
+        # Nessun threshold rispetta il vincolo, usa quello con FP rate più basso
+        best_idx = np.argmin(fp_rates)
+        best_threshold = thresholds[best_idx]
+        y_pred = (probs >= best_threshold).astype(np.int32)
+        best_f1 = precision_recall_fscore_support(y_true, y_pred, average="binary", zero_division=0)[2]
+        print(f"⚠️  Warning: No threshold satisfies max_fp_rate={max_fp_rate:.2%}")
+        print(f"   Using threshold with lowest FP rate: {best_threshold:.3f} (FP rate: {fp_rates[best_idx]:.2%})")
+    else:
+        # Scegli threshold con F1 più alto tra quelli validi
+        best_idx = np.argmax(valid_f1s)
+        best_threshold = valid_thresholds[best_idx]
+        best_f1 = valid_f1s[best_idx]
+    
+    threshold_info = {
+        'thresholds': thresholds.tolist(),
+        'fp_rates': fp_rates,
+        'max_fp_rate': max_fp_rate,
+        'best_threshold': float(best_threshold),
+        'best_f1': float(best_f1),
+        'n_valid_thresholds': len(valid_thresholds)
+    }
+    
+    return best_threshold, best_f1, threshold_info
+
+
 class EarlyStopping:
     def __init__(self, patience=5, min_delta=1e-4, mode="max"):
         self.patience = patience
