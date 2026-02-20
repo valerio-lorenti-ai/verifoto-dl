@@ -1,0 +1,34 @@
+# Baseline config con DOMAIN-AWARE split
+# Previene data leakage + bilancia source/generator tra train/val/test
+
+# Dataset
+dataset_root: /content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized
+
+# Split strategy
+split_strategy: domain_aware  # "group_v6" (default) o "domain_aware"
+split_include_food: false     # Se true, stratifica anche per food_category (può creare gruppi piccoli)
+
+# Model
+model_name: efficientnet_b0
+drop_rate: 0.2
+
+# Image
+img_size: 224
+batch_size: 16
+
+# Training
+seed: 42
+epochs_head: 5
+epochs_finetune: 25
+lr_head: 0.0003
+lr_finetune: 0.0001
+weight_decay: 0.001
+max_grad_norm: 1.0
+
+# Early stopping
+patience: 6
+monitor: pr_auc  # "pr_auc", "f1", "roc_auc"
+
+# Paths
+checkpoint_dir: checkpoints
+output_dir: outputs/runs

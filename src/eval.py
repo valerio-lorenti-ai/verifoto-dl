@@ -13,7 +13,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.utils.data import (
-    parse_augmented_v6_dataset, group_based_split_v6,
+    parse_augmented_v6_dataset, group_based_split_v6, domain_aware_group_split_v1,
     build_transforms, ImageBinaryDataset
 )
 from src.utils.model import build_model
@@ -104,10 +104,18 @@ def main():
         
         df = parse_augmented_v6_dataset(dataset_root)
         
-        # Split (use same seed for reproducibility - group-based to prevent leakage)
-        _, _, test_df = group_based_split_v6(
-            df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
-        )
+        # Split (use same seed for reproducibility - use same strategy as training)
+        split_strategy = config.get('split_strategy', 'group_v6')
+        split_include_food = config.get('split_include_food', False)
+        
+        if split_strategy == 'domain_aware':
+            _, _, test_df = domain_aware_group_split_v1(
+                df, 0.70, 0.15, 0.15, seed=config.get('seed', 42), include_food=split_include_food
+            )
+        else:
+            _, _, test_df = group_based_split_v6(
+                df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+            )
         print(f"\nInternal test set: {len(test_df)} images")
 
     # Dataset

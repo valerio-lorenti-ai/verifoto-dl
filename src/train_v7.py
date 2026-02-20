@@ -25,7 +25,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from src.utils.data import (
-    parse_augmented_v6_dataset, group_based_split_v6,
+    parse_augmented_v6_dataset, group_based_split_v6, domain_aware_group_split_v1,
     build_transforms, ImageBinaryDataset
 )
 from src.utils.model import build_model, set_backbone_trainable
@@ -142,10 +142,22 @@ def main():
     print("\n=== Loading dataset ===")
     df = parse_augmented_v6_dataset(dataset_root)
     
-    print("\n⚠️  Using GROUP-BASED split to prevent data leakage")
-    train_df, val_df, test_df = group_based_split_v6(
-        df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
-    )
+    # Split strategy
+    split_strategy = config.get('split_strategy', 'group_v6')
+    split_include_food = config.get('split_include_food', False)
+    
+    if split_strategy == 'domain_aware':
+        print("\n⚠️  Using DOMAIN-AWARE GROUP-BASED split")
+        print("   (prevents data leakage + balances source/generator across splits)")
+        train_df, val_df, test_df = domain_aware_group_split_v1(
+            df, 0.70, 0.15, 0.15, seed=config.get('seed', 42), include_food=split_include_food
+        )
+    else:
+        print("\n⚠️  Using GROUP-BASED split to prevent data leakage")
+        print("   (photos with multiple versions stay in same split)")
+        train_df, val_df, test_df = group_based_split_v6(
+            df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+        )
     
     # Datasets with differential augmentation
     img_size = config.get('img_size', 224)
