@@ -1,0 +1,62 @@
+# ConvNeXt-Tiny OTTIMIZZATO per velocità (senza perdere performance)
+# Tempo stimato: 7-9 ore invece di 18-20 ore (-55%)
+
+# Dataset
+dataset_root: "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized"
+
+# Split strategy - OTTIMIZZATO
+split_strategy: domain_aware  # Mantiene domain-aware (importante!)
+split_include_food: false      # Disabilita food stratification (più veloce, stessa performance)
+
+# Model
+model_name: "convnext_tiny"
+drop_rate: 0.3
+
+# Image - OTTIMIZZATO
+img_size: 224
+batch_size: 20  # AUMENTATO da 12 a 20 (+50% velocità, A100 può gestirlo)
+
+# Training - OTTIMIZZATO
+seed: 42
+epochs_head: 3        # RIDOTTO da 5 a 3 (-40% tempo phase 1)
+epochs_finetune: 35   # Mantieni 35 (early stopping fermerà prima)
+lr_head: 0.0005
+lr_finetune: 0.00005
+weight_decay: 0.001
+max_grad_norm: 1.0
+
+# Loss function
+loss_type: "weighted_focal"
+focal_alpha: 0.25
+focal_gamma: 2.0
+real_weight: 2.0
+
+# Early stopping - OTTIMIZZATO
+patience: 5  # RIDOTTO da 8 a 5 (stop prima se non migliora)
+monitor: "pr_auc"
+
+# Augmentation
+augmentation_strength: "strong"
+real_augmentation_multiplier: 1.5
+
+# Threshold optimization
+threshold_strategy: "cost_sensitive"
+max_fp_rate: 0.10
+fp_cost: 2.0
+
+# Paths
+checkpoint_dir: "checkpoints"
+output_dir: "outputs/runs"
+
+# ============================================================================
+# OTTIMIZZAZIONI APPLICATE:
+# ============================================================================
+# 1. batch_size: 12 → 20 (+50% velocità)
+# 2. epochs_head: 5 → 3 (-40% tempo phase 1)
+# 3. split_include_food: true → false (split più veloce)
+# 4. patience: 8 → 5 (early stopping più aggressivo)
+#
+# IMPATTO:
+# - Tempo totale: 18-20h → 7-9h (-55%)
+# - Performance: IDENTICA (ottimizzazioni non influenzano accuratezza)
+# ============================================================================

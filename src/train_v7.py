@@ -178,11 +178,14 @@ def main():
     val_ds = ImageBinaryDataset(val_df, transform=eval_tf, img_size=img_size)
     test_ds = ImageBinaryDataset(test_df, transform=eval_tf, img_size=img_size)
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0, 
+    # Use multiple workers for faster data loading (Colab has 2 CPUs, use 2 workers)
+    num_workers = 2 if torch.cuda.is_available() else 0
+    
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, 
                                pin_memory=True, collate_fn=collate_with_metadata)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0, 
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, 
                             pin_memory=True, collate_fn=collate_with_metadata)
-    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0, 
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, 
                              pin_memory=True, collate_fn=collate_with_metadata)
 
     # Model
