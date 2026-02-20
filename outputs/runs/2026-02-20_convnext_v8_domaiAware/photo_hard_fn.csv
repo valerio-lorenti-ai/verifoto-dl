@@ -1,0 +1,6 @@
+photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
+27e9,1,0.06866353775,0,modificate,,insalata,marcio,gpt_image_1_5,0.06866353775,0.011126099294607505,0.05232218,0.08277466,8
+3bd4,1,0.15065020375,0,modificate,,frutta_verdura,crudo,gpt_image_1_5,0.15065020375,0.043980237346247744,0.09965196,0.24555133,8
+9f3f,1,0.198878095,0,modificate,,altro,bruciato,gpt_image_1_5,0.198878095,0.029668009236525166,0.13861117,0.23840007,8
+8d1d,1,0.27391719000000003,0,modificate,,riso_paella,crudo,gpt_image_1_5,0.27391719000000003,0.012021829318527194,0.2570789,0.28654584,8
+e1bd,1,0.34183761375,0,modificate,,altro,marcio,gpt_image_1_5,0.34183761375,0.12047472456692207,0.18813963,0.54062754,8

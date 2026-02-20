@@ -1,0 +1,4 @@
+path,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/buone/internet/WhatsApp Image 2026-02-13 at 21.02.10 (1).jpeg,0,0.9734942,1,originali,buone,internet,,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/buone/galaxyA22/1000000009.jpg,0,0.96569633,1,originali,buone,galaxyA22,,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/originali/buone/galaxyA22/1000000010.jpg,0,0.9069777,1,originali,buone,galaxyA22,,
