@@ -1,0 +1,2 @@
+photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
+01f1,0,0.98898414625,1,originali,buono,pasta,,,0.98898414625,0.0213790802522445,0.9362783,0.9991359,8

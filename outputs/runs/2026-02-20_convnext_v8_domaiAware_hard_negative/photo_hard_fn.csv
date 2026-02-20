@@ -1,0 +1,3 @@
+photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
+0f3a,1,0.000104235185875,0,modificate,,riso_paella,crudo,gpt_image_1_5,0.000104235185875,2.889792271241991e-05,6.411128e-05,0.00014731936,8
+f26c,1,0.28302473125,0,modificate,,riso_paella,crudo,gpt_image_1_5,0.28302473125,0.3397256227112059,0.06558317,0.99847716,8
