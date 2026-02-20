@@ -30,8 +30,8 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.utils.data import (
-    parse_augmented_v6_dataset, group_based_split_v6,
-    build_transforms, ImageBinaryDataset
+    parse_augmented_v6_dataset, group_based_split_v6, domain_aware_group_split_v1,
+    build_transforms, ImageBinaryDataset, extract_photo_id
 )
 from src.utils.model import build_model
 from src.utils.metrics import predict_proba, compute_metrics_from_probs
@@ -73,11 +73,6 @@ def train_one_epoch_robust(model, loader, optimizer, criterion, scheduler=None, 
         print(f"  ⚠️  Skipped {skipped_batches} corrupted batches")
     
     return float(np.mean(losses)) if losses else np.nan
-
-
-def extract_photo_id(path: str) -> str:
-    """Extract photo ID from path (first 4 characters)."""
-    return Path(path).stem[:4]
 
 
 def collate_fn_filter_none(batch):
@@ -189,9 +184,23 @@ def main():
     # Load dataset
     print("\n=== Loading dataset ===")
     df = parse_augmented_v6_dataset(config['dataset_root'])
-    train_df, val_df, test_df = group_based_split_v6(
-        df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
-    )
+    
+    # Use SAME split strategy as original training to prevent data leakage
+    split_strategy = config.get('split_strategy', 'group_v6')
+    split_include_food = config.get('split_include_food', False)
+    
+    if split_strategy == 'domain_aware':
+        print("Using domain_aware_group_split_v1 (same as original training)")
+        train_df, val_df, test_df = domain_aware_group_split_v1(
+            df, 0.70, 0.15, 0.15, 
+            seed=config.get('seed', 42),
+            include_food=split_include_food
+        )
+    else:
+        print("Using group_based_split_v6 (same as original training)")
+        train_df, val_df, test_df = group_based_split_v6(
+            df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+        )
     
     # Count hard negatives in training set
     train_df['photo_id'] = train_df['path'].apply(extract_photo_id)
