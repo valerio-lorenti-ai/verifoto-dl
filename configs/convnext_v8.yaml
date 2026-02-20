@@ -1,0 +1,77 @@
+# ConvNeXt V8 - Configurazione Ottimizzata con Threshold 0.55
+# 
+# CHANGELOG V8:
+# - Threshold ottimizzato: 0.55 (da 0.90)
+#   * Trovato tramite photo-level analysis su run 2026-02-20_convnext_v8_domaiAware
+#   * F1: 82.6% (vs 72.3% con 0.90)
+#   * Recall: 88.2% (vs 66.7% con 0.90)
+#   * Precision: 77.6% (vs 79.1% con 0.90)
+#   * Miglior bilanciamento generale
+# - Domain-aware split abilitato di default
+# - Split strategy documentata
+
+dataset_root: "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized"
+
+# Model
+model_name: "convnext_tiny"
+drop_rate: 0.3
+
+# Image
+img_size: 224
+batch_size: 12  # ConvNeXt è più pesante
+
+# Training
+seed: 42
+epochs_head: 5
+epochs_finetune: 35  # Più epochs per dataset più grande
+lr_head: 0.0005
+lr_finetune: 0.00005
+weight_decay: 0.001
+max_grad_norm: 1.0
+
+# Loss function
+# Options: "bce" (standard), "focal" (riduce peso su easy examples), "weighted_focal" (focal + class weights)
+loss_type: "weighted_focal"
+focal_alpha: 0.25  # Peso per classe positiva (0.25 = più peso su positivi)
+focal_gamma: 2.0   # Focusing parameter (2.0 = standard, più alto = più focus su hard examples)
+
+# Class weights for real images (reduce FP)
+# Se real_weight > 1.0, penalizza di più gli errori su immagini reali
+real_weight: 2.0  # Penalità 2x per FP su immagini reali
+
+# Early stopping
+patience: 8
+monitor: "pr_auc"  # Oppure "f1" o "precision_at_recall_90"
+
+# Augmentation
+# Augmentation più aggressiva su immagini reali per ridurre overfitting
+augmentation_strength: "strong"  # "normal" o "strong"
+real_augmentation_multiplier: 1.5  # Augmentation più forte su real
+
+# Split Strategy
+# Options: "group_v6" (old), "domain_aware" (recommended)
+split_strategy: "domain_aware"  # Previene data leakage + bilancia source/generator
+split_include_food: false  # Set true per stratificare anche per food_category
+
+# Threshold optimization
+# IMPORTANTE: Threshold ottimizzato tramite photo-level analysis
+# Analisi su run 2026-02-20_convnext_v8_domaiAware ha mostrato che:
+# - Threshold 0.55 è ottimale per F1 (82.6%)
+# - Threshold 0.40 ha recall più alto (90.2%) ma precision più bassa (74.2%)
+# - Threshold 0.60 ha precision simile (77.2%) ma recall più basso (86.3%)
+# 
+# Raccomandazione: Usa 0.55 per produzione (miglior bilanciamento)
+# Alternative:
+#   - 0.40: Se recall è prioritario (rileva più frodi, più falsi allarmi)
+#   - 0.60: Se precision è prioritario (meno falsi allarmi, perde più frodi)
+threshold: 0.55  # Ottimale per F1 (82.6%), trovato tramite photo-level analysis
+
+# Threshold strategy (usato durante training per trovare threshold iniziale)
+# Nota: Il threshold finale (0.55) sovrascrive quello trovato durante training
+threshold_strategy: "f1"  # "f1" (raccomandato) o "cost_sensitive"
+max_fp_rate: 0.10  # Massimo 10% di FP rate accettabile (se usi cost_sensitive)
+fp_cost: 2.0  # Costo di un FP vs FN (se usi cost_sensitive)
+
+# Paths
+checkpoint_dir: "checkpoints"
+output_dir: "outputs/runs"

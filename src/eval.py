@@ -56,7 +56,7 @@ def main():
     parser.add_argument("--config", type=str, required=True, help="Path to config YAML")
     parser.add_argument("--run_name", type=str, required=True, help="Run name for output")
     parser.add_argument("--checkpoint_path", type=str, required=True, help="Path to checkpoint .pt file")
-    parser.add_argument("--threshold", type=float, default=0.5, help="Classification threshold")
+    parser.add_argument("--threshold", type=float, default=0.55, help="Classification threshold")
     parser.add_argument("--external_test_dataset", type=str, default=None, 
                         help="Path to external test dataset (completely separate from training data)")
     args = parser.parse_args()

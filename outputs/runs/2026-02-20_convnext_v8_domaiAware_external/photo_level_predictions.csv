@@ -1,0 +1,4 @@
+photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
+1000,0,0.6293313866666667,0,originali,cattive,galaxyA22,,,0.6293313866666667,0.5325592331959926,0.01532013,0.96569633,3
+Scre,1,0.225275135,0,modificate,screenshots,img_article,Screenshot 2026-02-13 194739.png,,0.225275135,0.2217110897125456,0.06850172,0.38204855,2
+What,1,0.18556617319027777,0,modificate,screenshots,screenshots,WhatsApp Image 2026-02-13 at 19.42.33 (2).jpeg,WhatsApp Image 2026-02-13 at 20.18.25.jpeg,0.18556617319027777,0.3055310763822736,0.0018610397,0.99506384,72
