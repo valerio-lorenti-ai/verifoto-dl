@@ -829,19 +829,26 @@ class ImageBinaryDataset(Dataset):
         fp = row['path']
         y = int(row['label'])
         
-        # Carica immagine
+        # Carica immagine con gestione errori robusta
         try:
             img = Image.open(fp).convert("RGB")
-        except Exception:
+        except Exception as e:
+            # Log warning and create black image as fallback
+            print(f"⚠️  Warning: Failed to load image {fp}: {e}")
             img = Image.new("RGB", (self.img_size, self.img_size), (0, 0, 0))
         
-        # Applica transform appropriato
-        if self.use_differential_aug and y == 0 and self.real_transform is not None:
-            # Immagine reale: usa real_transform (più aggressivo)
-            img = self.real_transform(img)
-        elif self.transform:
-            # Immagine generata o fallback: usa transform normale
-            img = self.transform(img)
+        # Applica transform con gestione errori
+        try:
+            if self.use_differential_aug and y == 0 and self.real_transform is not None:
+                # Immagine reale: usa real_transform (più aggressivo)
+                img = self.real_transform(img)
+            elif self.transform:
+                # Immagine generata o fallback: usa transform normale
+                img = self.transform(img)
+        except Exception as e:
+            # If transform fails, return None - will be filtered by collate_fn
+            print(f"⚠️  Warning: Transform failed for {fp}: {e}")
+            return None
         
         # Metadati
         meta = {

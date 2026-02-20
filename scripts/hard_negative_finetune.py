@@ -20,9 +20,11 @@ from pathlib import Path
 
 import yaml
 import pandas as pd
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, WeightedRandomSampler
+from tqdm import tqdm
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -33,12 +35,76 @@ from src.utils.data import (
 )
 from src.utils.model import build_model
 from src.utils.metrics import predict_proba, compute_metrics_from_probs
-from src.train import set_seed, train_one_epoch, validate, save_checkpoint
+from src.train_v7 import set_seed, validate, save_checkpoint
+
+
+def train_one_epoch_robust(model, loader, optimizer, criterion, scheduler=None, max_grad_norm=1.0, device="cuda"):
+    """
+    Robust version of train_one_epoch that handles None batches from collate_fn_filter_none.
+    """
+    model.train()
+    losses = []
+    skipped_batches = 0
+    
+    for batch in tqdm(loader, desc="train", leave=False):
+        # Skip None batches (from collate_fn_filter_none)
+        if batch is None:
+            skipped_batches += 1
+            continue
+            
+        x, y, _ = batch  # _ = metadata (non usati in training)
+        x = x.to(device, non_blocking=True)
+        y = y.to(device, non_blocking=True).float()
+
+        optimizer.zero_grad(set_to_none=True)
+        logits = model(x).squeeze(1)
+        loss = criterion(logits, y)
+        loss.backward()
+
+        if max_grad_norm is not None:
+            nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
+
+        optimizer.step()
+        if scheduler is not None:
+            scheduler.step()
+        losses.append(loss.item())
+    
+    if skipped_batches > 0:
+        print(f"  ⚠️  Skipped {skipped_batches} corrupted batches")
+    
+    return float(np.mean(losses)) if losses else np.nan
 
 
 def extract_photo_id(path: str) -> str:
     """Extract photo ID from path (first 4 characters)."""
     return Path(path).stem[:4]
+
+
+def collate_fn_filter_none(batch):
+    """
+    Custom collate function that filters out None values from batch
+    and properly handles metadata.
+    This handles cases where image loading fails.
+    """
+    # Filter out None values
+    batch = [item for item in batch if item is not None and item[0] is not None]
+    
+    if len(batch) == 0:
+        # Return empty batch - will be skipped
+        return None
+    
+    # Separate images, labels, and metadata
+    images = torch.stack([item[0] for item in batch])
+    labels = torch.stack([item[1] for item in batch])
+    
+    # Handle metadata
+    metadata = {}
+    if len(batch) > 0 and len(batch[0]) > 2:
+        meta_keys = batch[0][2].keys()
+        for key in meta_keys:
+            metadata[key] = [item[2][key] for item in batch]
+    
+    return images, labels, metadata
 
 
 def create_hard_negative_sampler(dataset, hard_fp_ids: set, repeat_factor: float = 3.0):
@@ -155,15 +221,15 @@ def main():
     
     train_loader = DataLoader(
         train_ds, batch_size=batch_size, sampler=hard_neg_sampler,
-        num_workers=0, pin_memory=True
+        num_workers=0, pin_memory=True, collate_fn=collate_fn_filter_none
     )
     val_loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
-        num_workers=0, pin_memory=True
+        num_workers=0, pin_memory=True, collate_fn=collate_fn_filter_none
     )
     test_loader = DataLoader(
         test_ds, batch_size=batch_size, shuffle=False,
-        num_workers=0, pin_memory=True
+        num_workers=0, pin_memory=True, collate_fn=collate_fn_filter_none
     )
     
     # Load model from checkpoint
@@ -214,7 +280,7 @@ def main():
     best_ckpt_path = checkpoint_dir / "best.pt"
     
     for epoch in range(1, args.epochs + 1):
-        tr_loss = train_one_epoch(
+        tr_loss = train_one_epoch_robust(
             model, train_loader, optimizer, criterion,
             scheduler=None, max_grad_norm=config.get('max_grad_norm', 1.0),
             device=device
