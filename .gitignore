@@ -85,6 +85,37 @@ outputs/runs/**/*.npz
 !outputs/runs/**/*.jpg
 !outputs/runs/**/*.jpeg
 
-# Agent context (AI assistant working files)
+# Agent context (AI assistant working files - NOT versioned)
 .kiro/agent/
 .kiro/notes/
+
+# IMPORTANT: .kiro/agent/ should contain MAX 3 files:
+# - status.md (main operational context)
+# - decisions.md (technical reference)
+# - README.md (structure guide)
+# DO NOT create additional files in .kiro/agent/
+
+# Temporary documentation files (NEVER commit these)
+# Task-specific summaries, fixes, analyses
+*_SUMMARY.md
+*_COMPLETE.md
+*_FIX.md
+*_ANALYSIS*.md
+*_UPDATE*.md
+NEXT_STEPS*.md
+QUICK_*.md
+FIX_*.md
+IMPLEMENTATION_*.md
+NOTEBOOK_*.md
+RISPOSTA_*.md
+TRAIN_*_ANALYSIS.md
+THRESHOLD_*.md
+CALIBRATED_*.md
+CONFIG_*_UPDATE*.md
+DOMAIN_AWARE_*_SUMMARY.md
+
+# Allow only essential documentation
+!README.md
+!CHECKPOINT_GUIDE.md
+!CHECKPOINT_PIPELINE_GUIDE.md
+!SPEED_OPTIMIZATION_GUIDE.md

@@ -4,27 +4,52 @@ inclusion: auto
 
 # Agent Working Guidelines
 
-## Documentation Philosophy
-- **Centralize**: Agent docs in `.kiro/agent/` and `.kiro/notes/`, NOT project root
-- **Minimize**: Few well-maintained files > many scattered files
-- **User docs**: Only README.md + docs/WORKFLOW.md (if needed)
-- **Update**: Keep existing docs current instead of creating new ones
-- **Brevity**: Short, actionable content only
-- **Separation**: Human docs (README) vs AI docs (.kiro/)
+## Documentation Philosophy - REGOLA ASSOLUTA
+
+### Principio Fondamentale
+**La repository appartiene a Valerio. Non è uno spazio per documentazione automatica non richiesta.**
+
+### Divieto Assoluto
+❌ **MAI creare file .md per:**
+- Task o sottotask
+- Recap automatici
+- Spiegazioni di modifiche
+- Tracking temporaneo
+- Documenti storici di task completati
+- Documentazione "just in case"
+- Summary, log, report non richiesti esplicitamente
+
+### Struttura Consentita (Unica Eccezione)
+✅ **Massimo 3 documenti nella cartella `.kiro/agent/`:**
+1. 1 documento principale di contesto operativo
+2. (Opzionale) 1-2 documenti tecnici di riferimento
+
+**Questi documenti devono:**
+- Essere riutilizzati e aggiornati nel tempo
+- NON moltiplicarsi
+- NON generare nuove versioni
+- NON essere duplicati
+- Funzionare come memoria centrale persistente, non log incrementale
+
+### Regola di Controllo Prima di Creare Qualsiasi File
+Prima di creare QUALSIASI documento, chiediti:
+1. È stato richiesto esplicitamente da Valerio?
+2. Posso aggiornare un documento esistente invece?
+3. Sarà letto e utile agli umani?
+4. Ha valore a lungo termine?
+
+**Se anche una sola risposta è NO → NON CREARE IL FILE**
+
+### Documentazione Consentita
+- **User docs**: README.md + docs/ (solo se richiesto da Valerio)
+- **Agent context**: Massimo 3 file in `.kiro/agent/` (riutilizzati e aggiornati)
+- **Root files**: Solo essenziali (README, requirements, configs)
 
 ## Code Modifications
 - **Test first**: Use `configs/quick_test.yaml` for fast verification
 - **Preserve**: Maintain backward compatibility
 - **Modular**: Keep src/ files focused and single-purpose
 - **No breaking changes**: Unless explicitly requested
-
-## File Management
-- **User docs**: README.md (main), docs/WORKFLOW.md (detailed), docs/AUGMENTED_V6_DATASET.md (reference)
-- **Agent context**: `.kiro/agent/` for current work, `.kiro/notes/` for technical logs
-- **Technical reference**: `docs/technical/` for architecture, migrations (not for daily reading)
-- **Root files**: Minimize - only essential project files (README, requirements, configs)
-- **Update vs Create**: Always prefer updating existing files
-- **No proliferation**: Don't create new markdown files in root
 
 ## Communication Style
 - **Concise**: Brief explanations, no verbose summaries
@@ -39,16 +64,18 @@ inclusion: auto
 4. Test with quick_test.yaml if modifying core code
 5. Update status.md with completion notes
 
-## What NOT to Do
-- ❌ Create markdown summaries in project root
-- ❌ Generate verbose documentation after simple tasks
-- ❌ Create new files when existing ones can be updated
-- ❌ Repeat information already in project docs
-- ❌ Make breaking changes without explicit approval
+## What NOT to Do (ASSOLUTO)
+- ❌ Creare file .md per task/sottotask
+- ❌ Creare summary, recap, log automatici
+- ❌ Creare documentazione non richiesta esplicitamente
+- ❌ Moltiplicare file nella root del progetto
+- ❌ Creare nuovi file quando posso aggiornare esistenti
+- ❌ Generare documentazione "just in case"
+- ❌ Creare più di 3 documenti in `.kiro/agent/`
 
-## What TO Do
-- ✅ Keep `.kiro/agent/status.md` current
-- ✅ Update existing docs when relevant
-- ✅ Make minimal, focused changes
-- ✅ Test changes before declaring complete
-- ✅ Maintain backward compatibility
+## What TO Do (OBBLIGATORIO)
+- ✅ Aggiornare i 3 documenti esistenti in `.kiro/agent/`
+- ✅ Chiedere conferma prima di creare QUALSIASI nuovo file .md
+- ✅ Mantenere la repository pulita e minimale
+- ✅ Rispettare la proprietà di Valerio sulla repository
+- ✅ Documentazione minima, strutturata, intenzionale
