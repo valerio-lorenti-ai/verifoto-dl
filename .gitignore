@@ -44,6 +44,8 @@ datasets/
 # Jupyter
 .ipynb_checkpoints
 *.ipynb
+!verifoto_dl.ipynb
+!script/notebooks/verifoto_dl.ipynb
 
 # IDE
 .vscode/
