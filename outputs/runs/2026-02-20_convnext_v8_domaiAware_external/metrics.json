@@ -3,7 +3,7 @@
   "checkpoint": "/content/drive/MyDrive/verifoto_checkpoints/2026-02-20_convnext_v8_domaiAware/best.pt",
   "test_mode": "external",
   "external_dataset": "/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca",
-  "timestamp": "2026-02-20 14:41:48",
+  "timestamp": "2026-02-23 10:46:20",
   "threshold": 0.9000000000000002,
   "test_metrics": {
     "acc": 0.8181818181818182,
@@ -50,9 +50,10 @@
     "real_augmentation_multiplier": 1.5,
     "real_weight": 2.0,
     "seed": 42,
-    "split_include_food": true,
+    "split_include_food": false,
     "split_strategy": "domain_aware",
-    "threshold_strategy": "cost_sensitive",
+    "threshold": 0.55,
+    "threshold_strategy": "f1",
     "weight_decay": 0.001
   }
 }
