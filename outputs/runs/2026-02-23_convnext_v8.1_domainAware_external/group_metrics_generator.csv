@@ -1,0 +1,9 @@
+generator,n_samples,n_pos,n_neg,accuracy,precision,recall,f1,roc_auc,pr_auc,tp,fp,tn,fn
+WhatsApp Image 2026-02-13 at 18.58.44.jpeg,1,1,0,1.0,1.0,1.0,1.0,,,1,0,0,0
+WhatsApp Image 2026-02-13 at 19.12.17.jpeg,1,1,0,0.0,0.0,0.0,0.0,,,0,0,0,1
+WhatsApp Image 2026-02-13 at 19.12.18.jpeg,1,1,0,0.0,0.0,0.0,0.0,,,0,0,0,1
+WhatsApp Image 2026-02-13 at 19.25.33.jpeg,1,1,0,0.0,0.0,0.0,0.0,,,0,0,0,1
+WhatsApp Image 2026-02-13 at 20.14.14.jpeg,1,1,0,0.0,0.0,0.0,0.0,,,0,0,0,1
+WhatsApp Image 2026-02-13 at 20.16.11.jpeg,1,1,0,1.0,1.0,1.0,1.0,,,1,0,0,0
+WhatsApp Image 2026-02-13 at 20.17.31.jpeg,1,1,0,0.0,0.0,0.0,0.0,,,0,0,0,1
+WhatsApp Image 2026-02-13 at 20.18.25.jpeg,1,1,0,1.0,1.0,1.0,1.0,,,1,0,0,0

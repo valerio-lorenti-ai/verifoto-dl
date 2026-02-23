@@ -1,0 +1,101 @@
+{
+  "run_name": "2026-02-23_convnext_v8.1_domainAware",
+  "git_commit": "ac9ebf8f69d715d571c59fe53605bb2a8e773d43",
+  "timestamp": "2026-02-23 12:09:05",
+  "threshold": 0.6500000000000001,
+  "threshold_strategy": "f1",
+  "threshold_info": {
+    "thresholds": [
+      0.1,
+      0.15000000000000002,
+      0.20000000000000004,
+      0.25000000000000006,
+      0.30000000000000004,
+      0.3500000000000001,
+      0.40000000000000013,
+      0.45000000000000007,
+      0.5000000000000001,
+      0.5500000000000002,
+      0.6000000000000002,
+      0.6500000000000001,
+      0.7000000000000002,
+      0.7500000000000002,
+      0.8000000000000002,
+      0.8500000000000002,
+      0.9000000000000002
+    ],
+    "scores": [
+      0.8158995815899581,
+      0.8404840484048405,
+      0.8384180790960452,
+      0.8429561200923787,
+      0.8520710059171598,
+      0.8465227817745803,
+      0.8523002421307506,
+      0.8574908647990256,
+      0.8616891064871481,
+      0.8627450980392157,
+      0.8627450980392157,
+      0.8698884758364313,
+      0.8646616541353384,
+      0.8549422336328626,
+      0.8398950131233596,
+      0.822429906542056,
+      0.7884615384615384
+    ],
+    "best_threshold": 0.6500000000000001,
+    "best_score": 0.8698884758364313,
+    "metric": "f1"
+  },
+  "test_metrics": {
+    "acc": 0.8337801608579088,
+    "prec": 0.8556701030927835,
+    "rec": 0.83,
+    "f1": 0.8426395939086294,
+    "prec_macro": 0.8328629845072856,
+    "rec_macro": 0.8340751445086705,
+    "f1_macro": 0.8332516151361329,
+    "roc_auc": 0.9185260115606937,
+    "pr_auc": 0.931763584109208
+  },
+  "confusion_matrix": [
+    [
+      290,
+      56
+    ],
+    [
+      68,
+      332
+    ]
+  ],
+  "config": {
+    "augmentation_strength": "strong",
+    "batch_size": 12,
+    "checkpoint_dir": "checkpoints",
+    "dataset_root": "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized",
+    "drop_rate": 0.3,
+    "epochs_finetune": 35,
+    "epochs_head": 5,
+    "focal_alpha": 0.25,
+    "focal_gamma": 2.0,
+    "fp_cost": 2.0,
+    "img_size": 224,
+    "loss_type": "weighted_focal",
+    "lr_finetune": 5e-05,
+    "lr_head": 0.0005,
+    "max_fp_rate": 0.1,
+    "max_grad_norm": 1.0,
+    "model_name": "convnext_tiny",
+    "monitor": "pr_auc",
+    "output_dir": "outputs/runs",
+    "patience": 8,
+    "real_augmentation_multiplier": 1.5,
+    "real_weight": 2.0,
+    "seed": 42,
+    "split_include_food": false,
+    "split_strategy": "domain_aware",
+    "threshold": 0.55,
+    "threshold_strategy": "f1",
+    "weight_decay": 0.001
+  }
+}

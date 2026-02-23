@@ -1,0 +1,12 @@
+path,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/chatgpt-mini/WhatsApp Image 2026-02-13 at 20.01.19.jpeg,1,0.014566027,0,modificate,,chatgpt-mini,WhatsApp Image 2026-02-13 at 20.01.19.jpeg,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/screenshots/WhatsApp Image 2026-02-13 at 19.42.34.jpeg,1,0.026185479,0,modificate,,screenshots,WhatsApp Image 2026-02-13 at 19.42.34.jpeg,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/chatgpt-1.5/iphone13pro/WhatsApp Image 2026-02-13 at 19.25.33.jpeg,1,0.027672246,0,modificate,,chatgpt-1.5,iphone13pro,WhatsApp Image 2026-02-13 at 19.25.33.jpeg
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/screenshots/WhatsApp Image 2026-02-13 at 19.42.33 (2).jpeg,1,0.03508548,0,modificate,,screenshots,WhatsApp Image 2026-02-13 at 19.42.33 (2).jpeg,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/chatgpt-1.5/iphone13pro/WhatsApp Image 2026-02-13 at 20.17.31.jpeg,1,0.055371866,0,modificate,,chatgpt-1.5,iphone13pro,WhatsApp Image 2026-02-13 at 20.17.31.jpeg
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/chatgpt-1.5/pixel7a/WhatsApp Image 2026-02-13 at 19.12.17.jpeg,1,0.06967556,0,modificate,,chatgpt-1.5,pixel7a,WhatsApp Image 2026-02-13 at 19.12.17.jpeg
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/chatgpt-1.5/iphone13pro/WhatsApp Image 2026-02-13 at 20.14.14.jpeg,1,0.077558435,0,modificate,,chatgpt-1.5,iphone13pro,WhatsApp Image 2026-02-13 at 20.14.14.jpeg
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/chatgpt-mini/WhatsApp Image 2026-02-13 at 19.59.11.jpeg,1,0.10013607,0,modificate,,chatgpt-mini,WhatsApp Image 2026-02-13 at 19.59.11.jpeg,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/chatgpt-1.5/pixel7a/WhatsApp Image 2026-02-13 at 19.12.18.jpeg,1,0.11293355,0,modificate,,chatgpt-1.5,pixel7a,WhatsApp Image 2026-02-13 at 19.12.18.jpeg
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/deevid_ai/WhatsApp Image 2026-02-13 at 19.49.37 (1).jpeg,1,0.43499938,0,modificate,,deevid_ai,WhatsApp Image 2026-02-13 at 19.49.37 (1).jpeg,
+/content/drive/MyDrive/DatasetVerifoto/images/whatsapp_Luca/modificate/deevid_ai/WhatsApp Image 2026-02-13 at 19.49.37.jpeg,1,0.55457634,0,modificate,,deevid_ai,WhatsApp Image 2026-02-13 at 19.49.37.jpeg,

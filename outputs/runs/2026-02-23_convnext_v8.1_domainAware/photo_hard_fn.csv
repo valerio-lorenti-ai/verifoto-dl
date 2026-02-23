@@ -1,0 +1,5 @@
+photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
+cdac,1,0.148597805125,0,modificate,,dessert,marcio,gpt_image_1_5,0.148597805125,0.05335107408100142,0.11781448,0.26254666,8
+433b,1,0.15127913375,0,modificate,,altro,insetti,gpt_image_1_5,0.15127913375,0.014842781003140825,0.13859424,0.18494658,8
+bf7e,1,0.1589579875,0,modificate,,altro,crudo,gpt_image_1_5,0.1589579875,0.06408136874948973,0.12957752,0.31711262,8
+3bd4,1,0.16316392125,0,modificate,,frutta_verdura,crudo,gpt_image_1_5,0.16316392125,0.05091777043871576,0.13298382,0.28387672,8
