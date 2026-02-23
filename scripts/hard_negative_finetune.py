@@ -185,22 +185,36 @@ def main():
     print("\n=== Loading dataset ===")
     df = parse_augmented_v6_dataset(config['dataset_root'])
     
-    # Use SAME split strategy as original training to prevent data leakage
-    split_strategy = config.get('split_strategy', 'group_v6')
-    split_include_food = config.get('split_include_food', False)
-    
-    if split_strategy == 'domain_aware':
-        print("Using domain_aware_group_split_v1 (same as original training)")
-        train_df, val_df, test_df = domain_aware_group_split_v1(
-            df, 0.70, 0.15, 0.15, 
-            seed=config.get('seed', 42),
-            include_food=split_include_food
-        )
+    # Try to load split from original run (for reproducibility)
+    split_dir = Path(args.run) / "split"
+    if split_dir.exists() and (split_dir / "train_split.csv").exists():
+        print(f"✓ Loading split from {split_dir}/ (ensures same test set as original)")
+        train_df = pd.read_csv(split_dir / "train_split.csv")
+        val_df = pd.read_csv(split_dir / "val_split.csv")
+        test_df = pd.read_csv(split_dir / "test_split.csv")
+        print(f"  Train: {len(train_df)} images")
+        print(f"  Val:   {len(val_df)} images")
+        print(f"  Test:  {len(test_df)} images")
     else:
-        print("Using group_based_split_v6 (same as original training)")
-        train_df, val_df, test_df = group_based_split_v6(
-            df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
-        )
+        print(f"⚠️  WARNING: Split files not found in {split_dir}/")
+        print(f"   Generating new split (may differ from original)")
+        
+        # Use SAME split strategy as original training to prevent data leakage
+        split_strategy = config.get('split_strategy', 'group_v6')
+        split_include_food = config.get('split_include_food', False)
+        
+        if split_strategy == 'domain_aware':
+            print("Using domain_aware_group_split_v1 (same as original training)")
+            train_df, val_df, test_df = domain_aware_group_split_v1(
+                df, 0.70, 0.15, 0.15, 
+                seed=config.get('seed', 42),
+                include_food=split_include_food
+            )
+        else:
+            print("Using group_based_split_v6 (same as original training)")
+            train_df, val_df, test_df = group_based_split_v6(
+                df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+            )
     
     # Count hard negatives in training set
     train_df['photo_id'] = train_df['path'].apply(extract_photo_id)

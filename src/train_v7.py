@@ -159,6 +159,14 @@ def main():
             df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
         )
     
+    # Save split for reproducibility (important for hard negative fine-tuning)
+    split_dir = output_dir / "split"
+    split_dir.mkdir(exist_ok=True)
+    train_df.to_csv(split_dir / "train_split.csv", index=False)
+    val_df.to_csv(split_dir / "val_split.csv", index=False)
+    test_df.to_csv(split_dir / "test_split.csv", index=False)
+    print(f"✓ Saved split to {split_dir}/ (for reproducibility)")
+    
     # Datasets with differential augmentation
     img_size = config.get('img_size', 224)
     batch_size = config.get('batch_size', 16)
