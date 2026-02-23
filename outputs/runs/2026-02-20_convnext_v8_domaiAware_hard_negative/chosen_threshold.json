@@ -1,6 +1,6 @@
 {
-  "f1_optimal": 0.9,
-  "precision_optimal_recall_90": 0.9,
-  "recommendation": 0.9,
+  "f1_optimal": 0.1,
+  "precision_optimal_recall_90": 0.1,
+  "recommendation": 0.1,
   "rationale": "Use precision-optimal if precision > 0.75, otherwise use F1-optimal"
 }

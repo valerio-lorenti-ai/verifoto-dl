@@ -1,3 +1,5 @@
 photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
-7b56,0,0.999973735,1,originali,buono,frutta_verdura,,,0.999973735,1.2002380715823564e-06,0.99997175,0.99997556,8
-01bd,0,0.98292924,1,originali,buono,frutta_verdura,,,0.98292924,0.015770270520610252,0.94835097,0.9999454,8
+474b,0,0.964111465,1,originali,buono,altro,,,0.964111465,0.040682960726038976,0.8641017,0.98651254,8
+4e90,0,0.79424386,1,originali,buono,burger_panino,,,0.79424386,0.20746437812309326,0.28334308,0.8941971,8
+pjhw,0,0.61827016,1,originali,buono,kaggle_vale_con_id,,,0.61827016,,0.61827016,0.61827016,1
+e21b,0,0.60599099125,1,originali,buono,altro,,,0.60599099125,0.04754916969011145,0.51355606,0.6880744,8
