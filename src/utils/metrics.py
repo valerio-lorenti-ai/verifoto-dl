@@ -274,8 +274,17 @@ def compute_group_metrics(df: pd.DataFrame, group_col: str, threshold=0.5):
         threshold: soglia per classificazione
     
     Returns:
-        DataFrame con metriche per gruppo
+        DataFrame con metriche per gruppo (vuoto se nessun gruppo valido)
     """
+    # Check if column exists and has non-null values
+    if group_col not in df.columns:
+        print(f"⚠️  Warning: Column '{group_col}' not found in DataFrame")
+        return _empty_group_metrics_df(group_col)
+    
+    if df[group_col].isna().all():
+        print(f"⚠️  Warning: Column '{group_col}' has only null values")
+        return _empty_group_metrics_df(group_col)
+    
     results = []
     
     for group_val, group_df in df.groupby(group_col):
@@ -327,7 +336,21 @@ def compute_group_metrics(df: pd.DataFrame, group_col: str, threshold=0.5):
             'fn': fn
         })
     
+    # Return empty DataFrame with standard columns if no results
+    if not results:
+        print(f"⚠️  Warning: No valid groups found for '{group_col}'")
+        return _empty_group_metrics_df(group_col)
+    
     return pd.DataFrame(results).sort_values('n_samples', ascending=False)
+
+
+def _empty_group_metrics_df(group_col: str):
+    """Helper function to create empty group metrics DataFrame with standard columns."""
+    return pd.DataFrame(columns=[
+        group_col, 'n_samples', 'n_pos', 'n_neg', 'accuracy', 
+        'precision', 'recall', 'f1', 'roc_auc', 'pr_auc',
+        'tp', 'fp', 'tn', 'fn'
+    ])
 
 
 def get_top_errors(df: pd.DataFrame, error_type='fp', top_n=50):
