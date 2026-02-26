@@ -152,11 +152,18 @@ def main():
         train_df, val_df, test_df = domain_aware_group_split_v1(
             df, 0.70, 0.15, 0.15, seed=config.get('seed', 42), include_food=split_include_food
         )
+    elif split_strategy == 'simple':
+        print("\n⚠️  Using SIMPLE STRATIFIED split")
+        print("   (may have data leakage if photos have multiple versions)")
+        train_df, val_df, test_df = stratified_group_split_v6(
+            df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+        )
     else:
         print("\n⚠️  Using GROUP-BASED split to prevent data leakage")
         print("   (photos with multiple versions stay in same split)")
         train_df, val_df, test_df = group_based_split_v6(
             df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+        )
         )
     
     # Save split for reproducibility (important for hard negative fine-tuning)

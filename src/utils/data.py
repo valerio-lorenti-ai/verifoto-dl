@@ -310,6 +310,21 @@ def domain_aware_group_split_v1(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.
     
     # Raggruppa immagini per photo_id
     photo_groups = df.groupby('photo_id').apply(lambda x: x.index.tolist()).to_dict()
+    n_unique_photos = len(photo_groups)
+    
+    # CRITICAL: Check if dataset is too small or "flat"
+    avg_versions_per_photo = len(df) / n_unique_photos
+    
+    if n_unique_photos < 20:
+        print(f"\n⚠️  WARNING: Only {n_unique_photos} unique photos detected!")
+        print(f"   This is too small for domain-aware split (need at least 20 photos).")
+        print(f"   Falling back to simple stratified split (may have data leakage).")
+        return stratified_group_split_v6(df, train_ratio, val_ratio, test_ratio, seed)
+    
+    if avg_versions_per_photo < 1.5:
+        print(f"\n⚠️  WARNING: Dataset appears to be 'flat' (avg {avg_versions_per_photo:.1f} versions per photo).")
+        print(f"   Domain-aware split may not be necessary.")
+        print(f"   Consider using simple stratified split if photos don't have multiple versions.")
     
     # Per ogni foto, determina label dominante, source, generator, food_category
     photo_meta = df.groupby('photo_id').agg({
@@ -529,6 +544,21 @@ def group_based_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, tes
     
     # Raggruppa immagini per photo_id
     photo_groups = df.groupby('photo_id').apply(lambda x: x.index.tolist()).to_dict()
+    n_unique_photos = len(photo_groups)
+    
+    # CRITICAL: Check if dataset is too small or "flat" (1 image per photo_id)
+    avg_versions_per_photo = len(df) / n_unique_photos
+    
+    if n_unique_photos < 20:
+        print(f"\n⚠️  WARNING: Only {n_unique_photos} unique photos detected!")
+        print(f"   This is too small for group-based split (need at least 20 photos).")
+        print(f"   Falling back to simple stratified split (may have data leakage).")
+        return stratified_group_split_v6(df, train_ratio, val_ratio, test_ratio, seed)
+    
+    if avg_versions_per_photo < 1.5:
+        print(f"\n⚠️  WARNING: Dataset appears to be 'flat' (avg {avg_versions_per_photo:.1f} versions per photo).")
+        print(f"   Group-based split may not be necessary.")
+        print(f"   Consider using simple stratified split if photos don't have multiple versions.")
     
     # Per ogni foto, determina label dominante e food_category
     photo_meta = df.groupby('photo_id').agg({
@@ -547,17 +577,32 @@ def group_based_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, tes
         photos = group['photo_id'].tolist()
         n = len(photos)
         
+        # CRITICAL: Ensure minimum size for each split
+        min_val = max(1, int(n * val_ratio))
+        min_test = max(1, int(n * test_ratio))
+        min_train = n - min_val - min_test
+        
+        if min_train < 1:
+            # Stratum too small, put all in train
+            print(f"⚠️  Stratum '{key}' too small (n={n}), putting all in train")
+            train_photos.extend(photos)
+            continue
+        
         # Shuffle
         rnd = random.Random(seed)
         rnd.shuffle(photos)
         
-        # Split
-        n_train = int(round(n * train_ratio))
-        n_val = int(round(n * val_ratio))
-        
-        train_photos.extend(photos[:n_train])
-        val_photos.extend(photos[n_train:n_train+n_val])
-        test_photos.extend(photos[n_train+n_val:])
+        # Split with guaranteed minimum sizes
+        train_photos.extend(photos[:min_train])
+        val_photos.extend(photos[min_train:min_train+min_val])
+        test_photos.extend(photos[min_train+min_val:])
+    
+    # CRITICAL: Verify splits are not empty
+    if len(val_photos) == 0 or len(test_photos) == 0:
+        print(f"\n❌ ERROR: Split resulted in empty val or test set!")
+        print(f"   Train: {len(train_photos)}, Val: {len(val_photos)}, Test: {len(test_photos)}")
+        print(f"   Falling back to simple stratified split.")
+        return stratified_group_split_v6(df, train_ratio, val_ratio, test_ratio, seed)
     
     # Converti photo_id in indices
     train_idx = [idx for photo in train_photos for idx in photo_groups[photo]]
@@ -565,9 +610,9 @@ def group_based_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, tes
     test_idx = [idx for photo in test_photos for idx in photo_groups[photo]]
     
     # Crea DataFrames
-    train_df = df.loc[train_idx].drop(columns=['photo_id', 'strat_key'], errors='ignore')
-    val_df = df.loc[val_idx].drop(columns=['photo_id', 'strat_key'], errors='ignore')
-    test_df = df.loc[test_idx].drop(columns=['photo_id', 'strat_key'], errors='ignore')
+    train_df = df.loc[train_idx].drop(columns=['photo_id'], errors='ignore')
+    val_df = df.loc[val_idx].drop(columns=['photo_id'], errors='ignore')
+    test_df = df.loc[test_idx].drop(columns=['photo_id'], errors='ignore')
     
     # Shuffle finale
     train_df = train_df.sample(frac=1, random_state=seed).reset_index(drop=True)
@@ -587,7 +632,7 @@ def group_based_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, tes
     print(f"\n" + "="*80)
     print("GROUP-BASED SPLIT (No Data Leakage)")
     print("="*80)
-    print(f"Unique photos: {len(photo_groups)}")
+    print(f"Unique photos: {n_unique_photos} (avg {avg_versions_per_photo:.1f} versions per photo)")
     print(f"  Train: {len(train_photos)} photos ({len(train_df)} images, {train_df['label'].mean():.3f} pos rate)")
     print(f"  Val:   {len(val_photos)} photos ({len(val_df)} images, {val_df['label'].mean():.3f} pos rate)")
     print(f"  Test:  {len(test_photos)} photos ({len(test_df)} images, {test_df['label'].mean():.3f} pos rate)")
