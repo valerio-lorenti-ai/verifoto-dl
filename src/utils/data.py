@@ -651,58 +651,32 @@ def group_based_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, tes
 
 def stratified_group_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15, test_ratio=0.15, seed=42):
     """
-    DEPRECATED: This function has data leakage issues.
-    Use group_based_split_v6() instead.
+    Split stratificato semplice per dataset flat.
+    Stratifica solo per label (originali vs modificate).
     
-    Split stratificato per augmented_v6 dataset.
-    Stratifica per label e food_category.
-    
-    ⚠️  WARNING: This split is RANDOM and does NOT prevent data leakage!
-    Photos with multiple versions can end up in both train and test sets.
+    IMPORTANTE: Usa questo per dataset flat senza versioni multiple.
+    Per dataset con versioni multiple, usa group_based_split_v6().
     
     Args:
-        df: DataFrame con colonne path, label, food_category, etc.
+        df: DataFrame con colonne path, label, etc.
         train_ratio, val_ratio, test_ratio: proporzioni split
         seed: random seed
     
     Returns:
         train_df, val_df, test_df
     """
-    print("\n⚠️  WARNING: Using stratified_group_split_v6() which may have data leakage!")
-    print("   Consider using group_based_split_v6() instead for production.")
-    
     assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6
     
-    # Detect if dataset is flat (use full filename as photo_id)
-    df_temp = df.copy()
-    df_temp['photo_id_short'] = df_temp['path'].apply(lambda x: extract_photo_id(x, use_full_name=False))
-    df_temp['photo_id_full'] = df_temp['path'].apply(lambda x: extract_photo_id(x, use_full_name=True))
+    df = df.copy()
     
-    n_unique_short = df_temp['photo_id_short'].nunique()
-    n_unique_full = df_temp['photo_id_full'].nunique()
-    avg_versions_short = len(df_temp) / n_unique_short
-    
-    # If dataset appears flat (< 30 unique photos with short IDs), use full filename
-    use_full_name = (n_unique_short < 30 and avg_versions_short > 50)
-    
-    if use_full_name:
-        print(f"   Detected flat dataset: {n_unique_short} unique photos with short IDs")
-        print(f"   Using full filename as photo_id ({n_unique_full} unique images)")
-        df = df_temp.copy()
-        df['photo_id'] = df['photo_id_full']
-    else:
-        df = df_temp.copy()
-        df['photo_id'] = df['photo_id_short']
-    
-    # Crea stratification key: label + food_category
-    df['strat_key'] = df['label'].astype(str) + "_" + df['food_category'].fillna("unknown")
-    
+    # Split semplice stratificato per label
     train_dfs = []
     val_dfs = []
     test_dfs = []
     
-    # Split per ogni gruppo
-    for key, group in df.groupby('strat_key'):
+    # Split per ogni label (0=originali, 1=modificate)
+    for label in [0, 1]:
+        group = df[df['label'] == label]
         n = len(group)
         indices = group.index.tolist()
         
@@ -731,21 +705,11 @@ def stratified_group_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15
     val_df = val_df.sample(frac=1, random_state=seed).reset_index(drop=True)
     test_df = test_df.sample(frac=1, random_state=seed).reset_index(drop=True)
     
-    # Rimuovi colonne temporanee
-    train_df = train_df.drop(columns=['strat_key', 'photo_id', 'photo_id_short', 'photo_id_full'], errors='ignore')
-    val_df = val_df.drop(columns=['strat_key', 'photo_id', 'photo_id_short', 'photo_id_full'], errors='ignore')
-    test_df = test_df.drop(columns=['strat_key', 'photo_id', 'photo_id_short', 'photo_id_full'], errors='ignore')
-    
-    print(f"\nSplit completato:")
-    print(f"  Train: {len(train_df)} ({train_df['label'].mean():.3f} pos rate)")
-    print(f"  Val:   {len(val_df)} ({val_df['label'].mean():.3f} pos rate)")
-    print(f"  Test:  {len(test_df)} ({test_df['label'].mean():.3f} pos rate)")
-    
-    # Analizza leakage solo se non usiamo full filename
-    if not use_full_name:
-        analyze_split_leakage(train_df, val_df, test_df)
-    else:
-        print("\n✓ Using full filename - no data leakage possible (each image is unique)")
+    print(f"\nSplit completato (stratificato per label):")
+    print(f"  Train: {len(train_df)} images ({train_df['label'].mean():.3f} pos rate)")
+    print(f"  Val:   {len(val_df)} images ({val_df['label'].mean():.3f} pos rate)")
+    print(f"  Test:  {len(test_df)} images ({test_df['label'].mean():.3f} pos rate)")
+    print(f"\n✓ Simple split - each image is treated as unique")
     
     return train_df, val_df, test_df
 

@@ -154,7 +154,7 @@ def main():
         )
     elif split_strategy == 'simple':
         print("\n⚠️  Using SIMPLE STRATIFIED split")
-        print("   (may have data leakage if photos have multiple versions)")
+        print("   (for flat datasets: each image is unique, no versions)")
         train_df, val_df, test_df = stratified_group_split_v6(
             df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
         )

@@ -49,8 +49,21 @@ augmentation_strength: "strong"  # "normal" o "strong"
 real_augmentation_multiplier: 1.5  # Augmentation più forte su real
 
 # Split Strategy
-# Options: "group_v6" (old), "domain_aware" (recommended)
-split_strategy: "domain_aware"  # Previene data leakage + bilancia source/generator
+# Options: 
+#   - "group_v6": Group-based split (prevents data leakage for datasets with multiple versions per photo)
+#   - "domain_aware": Domain-aware split (like group_v6 but also balances source/generator)
+#   - "simple": Simple stratified split (for flat datasets: 1 image = 1 unique photo, no versions)
+# 
+# Use "simple" for datasets like:
+#   - Downloaded from internet (each image is unique)
+#   - No multiple versions/augmentations of same photo
+#   - Just two folders: originali/ and modificate/
+# 
+# Use "group_v6" or "domain_aware" for datasets like:
+#   - Multiple versions per photo (e.g., different compressions, crops, etc.)
+#   - Augmented datasets with 8+ versions per photo
+#   - Need to prevent data leakage (same photo in train and test)
+split_strategy: "domain_aware"  # Change to "simple" for flat datasets
 split_include_food: false  # Set true per stratificare anche per food_category
 
 # Threshold optimization
