@@ -26,7 +26,7 @@ from tqdm.auto import tqdm
 
 from src.utils.data import (
     parse_augmented_v6_dataset, group_based_split_v6, domain_aware_group_split_v1,
-    build_transforms, ImageBinaryDataset
+    stratified_group_split_v6, build_transforms, ImageBinaryDataset
 )
 from src.utils.model import build_model, set_backbone_trainable
 from src.utils.losses import build_loss_function
