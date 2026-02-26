@@ -37,7 +37,7 @@ focal_gamma: 2.0   # Focusing parameter (2.0 = standard, più alto = più focus 
 
 # Class weights for real images (reduce FP)
 # Se real_weight > 1.0, penalizza di più gli errori su immagini reali
-real_weight: 2.0  # Penalità 2x per FP su immagini reali
+real_weight: 1.0  # Nessuna penalità extra (bilanciato)
 
 # Early stopping
 patience: 8
