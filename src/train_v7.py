@@ -164,7 +164,6 @@ def main():
         train_df, val_df, test_df = group_based_split_v6(
             df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
         )
-        )
     
     # Save split for reproducibility (important for hard negative fine-tuning)
     split_dir = output_dir / "split"
