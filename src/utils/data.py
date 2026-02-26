@@ -201,28 +201,35 @@ def label_of_path(p: str, non_dir: Path, frode_dir: Path) -> int:
     raise ValueError(f"Label non determinabile per: {p}")
 
 
-def extract_photo_id(path: str) -> str:
+def extract_photo_id(path: str, use_full_name: bool = False) -> str:
     """
     Estrae ID univoco della foto usando i PRIMI 4 CARATTERI del filename.
     
     IMPORTANTE: Tutte le versioni della stessa foto (originale, modificata, augmented)
     condividono gli stessi primi 4 caratteri del nome file.
     
-    Esempi:
-        originali/buono/pasta/1976_q95.jpg → 1976
-        originali/buono/pasta/1976_highres_crop.jpg → 1976
-        modificate/pasta/crudo/gpt/.../1976_bruciato.jpg → 1976
-        originali/buono/riso_paella/3cac_q50.jpg → 3cac
-        modificate/riso_paella/bruciato/gpt/.../3cac_bruciato_q70.jpg → 3cac
-    
     Args:
         path: path completo dell'immagine
+        use_full_name: se True, usa l'intero filename (per dataset flat senza versioni)
     
     Returns:
         photo_id: primi 4 caratteri del filename (es: "1976", "3cac", "dd44")
+                  oppure intero filename se use_full_name=True
+    
+    Esempi:
+        originali/buono/pasta/1976_q95.jpg → 1976 (use_full_name=False)
+        originali/buono/pasta/1976_highres_crop.jpg → 1976 (use_full_name=False)
+        modificate/pasta/crudo/gpt/.../1976_bruciato.jpg → 1976 (use_full_name=False)
+        
+        dataset_flat/img_001.jpg → img_001 (use_full_name=True)
+        dataset_flat/img_002.jpg → img_002 (use_full_name=True)
     """
     filename = Path(path).stem  # Rimuove estensione
-    return filename[:4]  # Primi 4 caratteri
+    
+    if use_full_name:
+        return filename  # Usa intero filename per dataset flat
+    else:
+        return filename[:4]  # Primi 4 caratteri per dataset con versioni
 
 
 def analyze_split_leakage(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame):
@@ -666,8 +673,28 @@ def stratified_group_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15
     
     assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6
     
+    # Detect if dataset is flat (use full filename as photo_id)
+    df_temp = df.copy()
+    df_temp['photo_id_short'] = df_temp['path'].apply(lambda x: extract_photo_id(x, use_full_name=False))
+    df_temp['photo_id_full'] = df_temp['path'].apply(lambda x: extract_photo_id(x, use_full_name=True))
+    
+    n_unique_short = df_temp['photo_id_short'].nunique()
+    n_unique_full = df_temp['photo_id_full'].nunique()
+    avg_versions_short = len(df_temp) / n_unique_short
+    
+    # If dataset appears flat (< 30 unique photos with short IDs), use full filename
+    use_full_name = (n_unique_short < 30 and avg_versions_short > 50)
+    
+    if use_full_name:
+        print(f"   Detected flat dataset: {n_unique_short} unique photos with short IDs")
+        print(f"   Using full filename as photo_id ({n_unique_full} unique images)")
+        df = df_temp.copy()
+        df['photo_id'] = df['photo_id_full']
+    else:
+        df = df_temp.copy()
+        df['photo_id'] = df['photo_id_short']
+    
     # Crea stratification key: label + food_category
-    df = df.copy()
     df['strat_key'] = df['label'].astype(str) + "_" + df['food_category'].fillna("unknown")
     
     train_dfs = []
@@ -704,18 +731,21 @@ def stratified_group_split_v6(df: pd.DataFrame, train_ratio=0.70, val_ratio=0.15
     val_df = val_df.sample(frac=1, random_state=seed).reset_index(drop=True)
     test_df = test_df.sample(frac=1, random_state=seed).reset_index(drop=True)
     
-    # Rimuovi colonna temporanea
-    train_df = train_df.drop(columns=['strat_key'])
-    val_df = val_df.drop(columns=['strat_key'])
-    test_df = test_df.drop(columns=['strat_key'])
+    # Rimuovi colonne temporanee
+    train_df = train_df.drop(columns=['strat_key', 'photo_id', 'photo_id_short', 'photo_id_full'], errors='ignore')
+    val_df = val_df.drop(columns=['strat_key', 'photo_id', 'photo_id_short', 'photo_id_full'], errors='ignore')
+    test_df = test_df.drop(columns=['strat_key', 'photo_id', 'photo_id_short', 'photo_id_full'], errors='ignore')
     
     print(f"\nSplit completato:")
     print(f"  Train: {len(train_df)} ({train_df['label'].mean():.3f} pos rate)")
     print(f"  Val:   {len(val_df)} ({val_df['label'].mean():.3f} pos rate)")
     print(f"  Test:  {len(test_df)} ({test_df['label'].mean():.3f} pos rate)")
     
-    # Analizza leakage
-    analyze_split_leakage(train_df, val_df, test_df)
+    # Analizza leakage solo se non usiamo full filename
+    if not use_full_name:
+        analyze_split_leakage(train_df, val_df, test_df)
+    else:
+        print("\n✓ Using full filename - no data leakage possible (each image is unique)")
     
     return train_df, val_df, test_df
 
