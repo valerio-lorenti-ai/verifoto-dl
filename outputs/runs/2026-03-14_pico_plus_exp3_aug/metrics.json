@@ -1,0 +1,101 @@
+{
+  "run_name": "2026-03-14_pico_plus_exp3_aug",
+  "git_commit": "b8c2fe041303aa427b41216b91340a272f78c094",
+  "timestamp": "2026-03-14 17:23:10",
+  "threshold": 0.20000000000000004,
+  "threshold_strategy": "f1",
+  "threshold_info": {
+    "thresholds": [
+      0.1,
+      0.15000000000000002,
+      0.20000000000000004,
+      0.25000000000000006,
+      0.30000000000000004,
+      0.3500000000000001,
+      0.40000000000000013,
+      0.45000000000000007,
+      0.5000000000000001,
+      0.5500000000000002,
+      0.6000000000000002,
+      0.6500000000000001,
+      0.7000000000000002,
+      0.7500000000000002,
+      0.8000000000000002,
+      0.8500000000000002,
+      0.9000000000000002
+    ],
+    "scores": [
+      0.9207547169811321,
+      0.9190567240280434,
+      0.9210019267822736,
+      0.920593931568754,
+      0.9182879377431906,
+      0.9197651663405088,
+      0.920655737704918,
+      0.9197368421052632,
+      0.9199205823957644,
+      0.9192795196797865,
+      0.9195710455764075,
+      0.9181208053691275,
+      0.918918918918919,
+      0.9156462585034013,
+      0.9140518417462483,
+      0.9077134986225895,
+      0.8941836019621584
+    ],
+    "best_threshold": 0.20000000000000004,
+    "best_score": 0.9210019267822736,
+    "metric": "f1"
+  },
+  "test_metrics": {
+    "acc": 0.8926470588235295,
+    "prec": 0.8862793572311496,
+    "rec": 0.9299610894941635,
+    "f1": 0.9075949367088607,
+    "prec_macro": 0.8941378637335422,
+    "rec_macro": 0.8868820727606641,
+    "f1_macro": 0.8897623806351321,
+    "roc_auc": 0.9686513887329092,
+    "pr_auc": 0.9779016317316593
+  },
+  "confusion_matrix": [
+    [
+      497,
+      92
+    ],
+    [
+      54,
+      717
+    ]
+  ],
+  "config": {
+    "augmentation_strength": "strong",
+    "batch_size": 12,
+    "checkpoint_dir": "checkpoints",
+    "dataset_root": "/content/tmp_merged_datasets/platsim_ar_pico_banana_9gb-V__PLUS__exp_3_augmented_v6.2_noK",
+    "drop_rate": 0.3,
+    "epochs_finetune": 35,
+    "epochs_head": 5,
+    "focal_alpha": 0.25,
+    "focal_gamma": 2.0,
+    "fp_cost": 2.0,
+    "img_size": 224,
+    "loss_type": "weighted_focal",
+    "lr_finetune": 5e-05,
+    "lr_head": 0.0005,
+    "max_fp_rate": 0.1,
+    "max_grad_norm": 1.0,
+    "model_name": "convnext_tiny",
+    "monitor": "pr_auc",
+    "output_dir": "outputs/runs",
+    "patience": 8,
+    "real_augmentation_multiplier": 1.5,
+    "real_weight": 1.0,
+    "seed": 42,
+    "split_include_food": false,
+    "split_strategy": "domain_aware",
+    "threshold": 0.55,
+    "threshold_strategy": "f1",
+    "weight_decay": 0.001
+  }
+}
