@@ -1,0 +1,59 @@
+{
+  "run_name": "2026-03-17_convnext_v8_pico_plus_exp3_raw_Vale_external",
+  "checkpoint": "/content/drive/MyDrive/verifoto_checkpoints/2026-03-14_pico_plus_exp3_aug/best.pt",
+  "test_mode": "external",
+  "external_dataset": "/content/drive/MyDrive/DatasetVerifoto/images/raw_vale_id",
+  "timestamp": "2026-03-17 17:03:50",
+  "threshold": 0.2,
+  "test_metrics": {
+    "acc": 0.6964285714285714,
+    "prec": 0.7835051546391752,
+    "rec": 0.7169811320754716,
+    "f1": 0.7487684729064039,
+    "prec_macro": 0.6804849716857848,
+    "rec_macro": 0.6891357273280584,
+    "f1_macro": 0.6826549131449313,
+    "roc_auc": 0.746804625684723,
+    "pr_auc": 0.8469311622603714
+  },
+  "confusion_matrix": [
+    [
+      41,
+      21
+    ],
+    [
+      30,
+      76
+    ]
+  ],
+  "config": {
+    "dataset_root": "/content/drive/MyDrive/DatasetVerifoto/images/exp_3_augmented_v6.1_categorized",
+    "model_name": "convnext_tiny",
+    "drop_rate": 0.3,
+    "img_size": 224,
+    "batch_size": 12,
+    "seed": 42,
+    "epochs_head": 5,
+    "epochs_finetune": 35,
+    "lr_head": 0.0005,
+    "lr_finetune": 5e-05,
+    "weight_decay": 0.001,
+    "max_grad_norm": 1.0,
+    "loss_type": "weighted_focal",
+    "focal_alpha": 0.25,
+    "focal_gamma": 2.0,
+    "real_weight": 1.0,
+    "patience": 8,
+    "monitor": "pr_auc",
+    "augmentation_strength": "strong",
+    "real_augmentation_multiplier": 1.5,
+    "split_strategy": "domain_aware",
+    "split_include_food": false,
+    "threshold": 0.55,
+    "threshold_strategy": "f1",
+    "max_fp_rate": 0.1,
+    "fp_cost": 2.0,
+    "checkpoint_dir": "checkpoints",
+    "output_dir": "outputs/runs"
+  }
+}

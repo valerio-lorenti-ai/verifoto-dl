@@ -26,7 +26,7 @@ from tqdm.auto import tqdm
 
 from src.utils.data import (
     parse_augmented_v6_dataset, group_based_split_v6, domain_aware_group_split_v1,
-    build_transforms, ImageBinaryDataset
+    stratified_group_split_v6, build_transforms, ImageBinaryDataset
 )
 from src.utils.model import build_model, set_backbone_trainable
 from src.utils.losses import build_loss_function
@@ -152,6 +152,12 @@ def main():
         train_df, val_df, test_df = domain_aware_group_split_v1(
             df, 0.70, 0.15, 0.15, seed=config.get('seed', 42), include_food=split_include_food
         )
+    elif split_strategy == 'simple':
+        print("\n⚠️  Using SIMPLE STRATIFIED split")
+        print("   (for flat datasets: each image is unique, no versions)")
+        train_df, val_df, test_df = stratified_group_split_v6(
+            df, 0.70, 0.15, 0.15, seed=config.get('seed', 42)
+        )
     else:
         print("\n⚠️  Using GROUP-BASED split to prevent data leakage")
         print("   (photos with multiple versions stay in same split)")
@@ -215,7 +221,7 @@ def main():
         'pos_weight': pos_weight,
         'focal_alpha': config.get('focal_alpha', 0.25),
         'focal_gamma': config.get('focal_gamma', 2.0),
-        'real_weight': config.get('real_weight', 2.0),
+        'real_weight': config.get('real_weight', 1.0),
         'fp_cost': config.get('fp_cost', 2.0),
         'fn_cost': config.get('fn_cost', 1.0),
     }
@@ -380,9 +386,23 @@ def main():
     # Group metrics
     print("\n=== Computing group metrics ===")
     for group_col in ['food_category', 'defect_type', 'generator', 'quality']:
-        group_metrics = compute_group_metrics(predictions_df, group_col, threshold=test_threshold)
-        group_metrics.to_csv(output_dir / f"group_metrics_{group_col}.csv", index=False)
-        print(f"✓ Saved group_metrics_{group_col}.csv")
+        # Check if column has any non-null values before computing metrics
+        if group_col in predictions_df.columns and not predictions_df[group_col].isna().all():
+            group_metrics = compute_group_metrics(predictions_df, group_col, threshold=test_threshold)
+            group_metrics.to_csv(output_dir / f"group_metrics_{group_col}.csv", index=False)
+            if len(group_metrics) > 0:
+                print(f"✓ Saved group_metrics_{group_col}.csv ({len(group_metrics)} groups)")
+            else:
+                print(f"⚠️  Skipped group_metrics_{group_col}.csv (no valid groups)")
+        else:
+            print(f"⚠️  Skipped group_metrics_{group_col}.csv (column empty or missing)")
+            # Save empty CSV to maintain consistency
+            empty_df = pd.DataFrame(columns=[
+                group_col, 'n_samples', 'n_pos', 'n_neg', 'accuracy', 
+                'precision', 'recall', 'f1', 'roc_auc', 'pr_auc',
+                'tp', 'fp', 'tn', 'fn'
+            ])
+            empty_df.to_csv(output_dir / f"group_metrics_{group_col}.csv", index=False)
     
     # Top errors
     top_fp = get_top_errors(predictions_df, error_type='fp', top_n=50)
