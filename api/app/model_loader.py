@@ -13,7 +13,7 @@ def load_model():
         drop_rate=0.3
     )
 
-    ckpt = torch.load(MODEL_PATH, map_location=DEVICE)
+    ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=False)
     model.load_state_dict(ckpt["state_dict"])
 
     model.to(DEVICE)
