@@ -1,12 +1,15 @@
 FROM python:3.11-slim
+ARG MODEL_URL
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
+RUN mkdir -p weights && \
+    apt-get update && apt-get install -y curl && \
+    curl -L "$MODEL_URL" -o weights/best.pt
+    
 COPY app ./app
-COPY weights ./weights
 
 EXPOSE 8000
 
