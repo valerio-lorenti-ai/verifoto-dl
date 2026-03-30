@@ -1,6 +1,5 @@
 fastapi
 uvicorn[standard]
-timm
 pillow
 python-multipart
 gdown
