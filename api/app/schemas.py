@@ -10,3 +10,4 @@ class PredictionResponse(BaseModel):
     predicted_class: str
     score: float
     confidence_level: str
+    model_version: str

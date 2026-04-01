@@ -21,6 +21,7 @@ transform = transforms.Compose([
     ),
 ])
 
+MODEL_VERSION = "pico_plus_exp3_aug"
 THRESHOLD = 0.2
 
 
@@ -45,4 +46,4 @@ def predict_image(image_bytes: bytes):
     else:
         confidence_level = "low"
 
-    return predicted_class, round(score, 4), confidence_level
+    return predicted_class, round(score, 4), confidence_level, MODEL_VERSION

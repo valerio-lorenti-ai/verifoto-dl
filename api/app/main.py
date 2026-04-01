@@ -22,7 +22,7 @@ async def predict(file: UploadFile = File(...)):
     t1 = time.perf_counter()
 
     try:
-        predicted_class, score, confidence = predict_image(image_bytes)
+        predicted_class, score, confidence_level, model_version = predict_image(image_bytes)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     t2 = time.perf_counter()
@@ -35,5 +35,6 @@ async def predict(file: UploadFile = File(...)):
         "filename": file.filename,
         "predicted_class": predicted_class,
         "score": score,
-        "confidence_level": confidence
+        "confidence_level": confidence_level,
+        "model_version": model_version
     }       
