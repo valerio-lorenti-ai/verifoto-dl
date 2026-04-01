@@ -1,14 +1,16 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from app.inference import predict_image
+from app.schemas import HealthResponse, PredictionResponse
 
 app = FastAPI()
 
-@app.get("/health")
+
+@app.get("/health", response_model=HealthResponse)
 def health():
     return {"status": "ok"}
 
 
-@app.post("/predict")
+@app.post("/predict", response_model=PredictionResponse)
 async def predict(file: UploadFile = File(...)):
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File non valido")
