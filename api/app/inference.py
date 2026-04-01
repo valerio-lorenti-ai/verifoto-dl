@@ -25,7 +25,10 @@ THRESHOLD = 0.2
 
 
 def predict_image(image_bytes: bytes):
-    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    try:
+        image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    except Exception:
+        raise ValueError("Impossibile leggere l'immagine")
     x = transform(image).unsqueeze(0)
 
     with torch.no_grad():

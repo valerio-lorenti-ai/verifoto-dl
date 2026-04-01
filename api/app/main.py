@@ -21,7 +21,10 @@ async def predict(file: UploadFile = File(...)):
     image_bytes = await file.read()
     t1 = time.perf_counter()
 
-    predicted_class, score, confidence = predict_image(image_bytes)
+    try:
+        predicted_class, score, confidence_level = predict_image(image_bytes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     t2 = time.perf_counter()
 
     print(f"read_file: {t1 - t0:.3f}s")
