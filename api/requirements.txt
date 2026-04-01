@@ -3,4 +3,3 @@ uvicorn[standard]
 pillow
 python-multipart
 gdown
-numpy
