@@ -1,5 +1,4 @@
 from io import BytesIO
-
 import numpy as np
 import torch
 from PIL import Image
