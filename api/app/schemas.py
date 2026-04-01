@@ -6,8 +6,12 @@ class HealthResponse(BaseModel):
 
 
 class PredictionResponse(BaseModel):
+    status: str
     filename: str
     predicted_class: str
-    score: float
+    manipulation_probability: float
     confidence_level: str
     model_version: str
+    threshold: float
+    decision: str
+    

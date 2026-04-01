@@ -39,6 +39,13 @@ def predict_image(image_bytes: bytes):
 
     predicted_class = "manipulated" if score >= THRESHOLD else "real"
 
+    if predicted_class == "manipulated" and confidence_level == "high":
+        decision = "likely_fraud"
+    elif predicted_class == "real" and confidence_level == "high":
+        decision = "likely_valid"
+    else:
+        decision = "uncertain"
+
     if score >= 0.8 or score <= 0.1:
         confidence_level = "high"
     elif score >= 0.6 or score <= 0.2:
@@ -46,4 +53,4 @@ def predict_image(image_bytes: bytes):
     else:
         confidence_level = "low"
 
-    return predicted_class, round(score, 4), confidence_level, MODEL_VERSION
+    return predicted_class, round(score, 4), confidence_level, MODEL_VERSION, THRESHOLD, decision
