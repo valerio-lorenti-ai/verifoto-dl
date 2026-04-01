@@ -12,7 +12,10 @@ def health():
 
 
 @app.post("/predict", response_model=PredictionResponse)
-async def predict(file: UploadFile = File(...)):
+async def predict(
+    file: UploadFile = File(...),
+    request_id: str = None
+):
     t0 = time.perf_counter()
 
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -22,7 +25,7 @@ async def predict(file: UploadFile = File(...)):
     t1 = time.perf_counter()
 
     try:
-        predicted_class, score, confidence_level, model_version, threshold, decision = predict_image(image_bytes)
+        predicted_class, score, confidence_level, model_version, threshold, decision, inference_time_ms = predict_image(image_bytes)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     t2 = time.perf_counter()
@@ -33,11 +36,13 @@ async def predict(file: UploadFile = File(...)):
 
     return {
         "status": "success",
+        "service_name": "verifoto-dl",
         "filename": file.filename,
         "predicted_class": predicted_class,
         "manipulation_probability": score,
         "confidence_level": confidence_level,
         "model_version": model_version,
         "threshold": threshold,
-        "decision": decision
+        "decision": decision,
+        "inference_time_ms": inference_time_ms
     }       

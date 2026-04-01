@@ -1,5 +1,5 @@
 from io import BytesIO
-
+import time
 import torch
 from PIL import Image
 from torchvision import transforms
@@ -26,6 +26,7 @@ THRESHOLD = 0.2
 
 
 def predict_image(image_bytes: bytes):
+    start_time = time.time()
     try:
         image = Image.open(BytesIO(image_bytes)).convert("RGB")
     except Exception:
@@ -53,4 +54,5 @@ def predict_image(image_bytes: bytes):
     else:
         decision = "uncertain"
 
-    return predicted_class, round(score, 4), confidence_level, MODEL_VERSION, THRESHOLD, decision
+    inference_time_ms = round((time.time() - start_time) * 1000, 2)
+    return predicted_class, round(score, 4), confidence_level, MODEL_VERSION, THRESHOLD, decision, inference_time_ms

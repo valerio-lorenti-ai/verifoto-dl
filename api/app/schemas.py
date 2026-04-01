@@ -7,6 +7,7 @@ class HealthResponse(BaseModel):
 
 class PredictionResponse(BaseModel):
     status: str
+    service_name: str
     filename: str
     predicted_class: str
     manipulation_probability: float
@@ -14,4 +15,5 @@ class PredictionResponse(BaseModel):
     model_version: str
     threshold: float
     decision: str
+    inference_time_ms: float
     
