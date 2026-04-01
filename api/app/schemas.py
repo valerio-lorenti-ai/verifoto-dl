@@ -9,3 +9,4 @@ class PredictionResponse(BaseModel):
     filename: str
     predicted_class: str
     score: float
+    confidence_level: str

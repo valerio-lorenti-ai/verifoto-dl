@@ -17,10 +17,11 @@ async def predict(file: UploadFile = File(...)):
 
     image_bytes = await file.read()
 
-    predicted_class, score = predict_image(image_bytes)
+    predicted_class, score, confidence_level = predict_image(image_bytes)
 
     return {
         "filename": file.filename,
         "predicted_class": predicted_class,
-        "score": score
-    }
+        "score": score,
+        "confidence_level": confidence_level
+    }       

@@ -33,5 +33,11 @@ def predict_image(image_bytes: bytes):
         score = torch.sigmoid(logit).item()
 
     predicted_class = "manipulated" if score >= THRESHOLD else "real"
+    if score >= 0.8 or score <= 0.1:
+        confidence_level = "high"
+    elif score >= 0.6 or score <= 0.2:
+        confidence_level = "medium"
+    else:
+        confidence_level = "low"
 
-    return predicted_class, round(score, 4)
+    return predicted_class, round(score, 4), confidence_level
