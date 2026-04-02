@@ -25,8 +25,13 @@ MODEL_VERSION = "pico_plus_exp3_aug"
 THRESHOLD = 0.2
 
 
-def predict_image(image_bytes: bytes):
+def predict_image(image_bytes: bytes, timeout_seconds: float = 5.0):
+
     start_time = time.time()
+
+    if time.time() - start_time > timeout_seconds:
+        raise TimeoutError("Inference timeout")
+
     try:
         image = Image.open(BytesIO(image_bytes)).convert("RGB")
     except Exception:
@@ -37,6 +42,9 @@ def predict_image(image_bytes: bytes):
     with torch.no_grad():
         logit = model(x).squeeze(1)
         score = torch.sigmoid(logit).item()
+    
+    if time.time() - start_time > timeout_seconds:
+        raise TimeoutError("Inference timeout")
 
     predicted_class = "manipulated" if score >= THRESHOLD else "real"
 

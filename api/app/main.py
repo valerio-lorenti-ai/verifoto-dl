@@ -25,7 +25,10 @@ async def predict(
     t1 = time.perf_counter()
 
     try:
-        predicted_class, score, confidence_level, model_version, threshold, decision, inference_time_ms = predict_image(image_bytes)
+        try:
+            predicted_class, score, confidence_level, model_version, threshold, decision, inference_time_ms = predict_image(image_bytes)
+        except TimeoutError:
+            raise HTTPException(status_code=504, detail="Inference timeout")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     t2 = time.perf_counter()
