@@ -1,7 +1,12 @@
+import os
 import torch
 import timm
 from PIL import Image
 from torchvision import transforms
+from dotenv import load_dotenv
+
+# Carica env
+load_dotenv()
 
 MODEL_PATH = "weights/best.pt"
 TEST_IMAGES = [
@@ -30,7 +35,7 @@ transform = transforms.Compose([
     ),
 ])
 
-threshold = 0.2
+threshold = float(os.getenv("THRESHOLD", "0.2"))
 
 for image_path in TEST_IMAGES:
     img = Image.open(image_path).convert("RGB")

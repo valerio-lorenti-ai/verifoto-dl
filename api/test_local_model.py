@@ -3,6 +3,11 @@ Test locale puro del modello — niente HTTP, niente server.
 Esegui da api/: python test_local_model.py
 """
 import sys
+from dotenv import load_dotenv
+
+# Carica env prima di importare app (settings legge os.getenv al momento dell'import)
+load_dotenv()
+
 from app.inference import predict_image
 
 TEST_IMAGES = [

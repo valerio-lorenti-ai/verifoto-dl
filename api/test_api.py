@@ -6,8 +6,12 @@ Esegui da api/: python test_api.py
 import sys
 import os
 import requests
+from dotenv import load_dotenv
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+# Carica env
+load_dotenv()
+
+API_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 API_KEY = os.getenv("INTERNAL_API_KEY", "")
 
 headers = {"x-api-key": API_KEY} if API_KEY else {}
