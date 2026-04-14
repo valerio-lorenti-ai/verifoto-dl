@@ -5,32 +5,25 @@ from PIL import Image
 from torchvision import transforms
 
 from app.model_loader import load_model
+from app import settings
 
-# carico il modello UNA volta sola
 print("🚀 Caricamento modello...")
 model = load_model()
+model_loaded = True
 
-# stessa pipeline del training
 transform = transforms.Compose([
-    transforms.Resize(257),
-    transforms.CenterCrop(224),
+    transforms.Resize(settings.IMG_RESIZE),
+    transforms.CenterCrop(settings.IMG_CROP),
     transforms.ToTensor(),
     transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
+        mean=settings.NORMALIZE_MEAN,
+        std=settings.NORMALIZE_STD
     ),
 ])
 
-MODEL_VERSION = "pico_plus_exp3_aug"
-THRESHOLD = 0.2
-
 
 def predict_image(image_bytes: bytes, timeout_seconds: float = 5.0):
-
     start_time = time.time()
-
-    if time.time() - start_time > timeout_seconds:
-        raise TimeoutError("Inference timeout")
 
     try:
         image = Image.open(BytesIO(image_bytes)).convert("RGB")
@@ -42,11 +35,11 @@ def predict_image(image_bytes: bytes, timeout_seconds: float = 5.0):
     with torch.no_grad():
         logit = model(x).squeeze(1)
         score = torch.sigmoid(logit).item()
-    
+
     if time.time() - start_time > timeout_seconds:
         raise TimeoutError("Inference timeout")
 
-    predicted_class = "manipulated" if score >= THRESHOLD else "real"
+    predicted_class = "manipulated" if score >= settings.THRESHOLD else "real"
 
     if score >= 0.8 or score <= 0.1:
         confidence_level = "high"
@@ -63,4 +56,12 @@ def predict_image(image_bytes: bytes, timeout_seconds: float = 5.0):
         decision = "uncertain"
 
     inference_time_ms = round((time.time() - start_time) * 1000, 2)
-    return predicted_class, round(score, 4), confidence_level, MODEL_VERSION, THRESHOLD, decision, inference_time_ms
+    return (
+        predicted_class,
+        round(score, 4),
+        confidence_level,
+        settings.MODEL_VERSION,
+        settings.THRESHOLD,
+        decision,
+        inference_time_ms,
+    )

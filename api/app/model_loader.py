@@ -19,6 +19,6 @@ def load_model():
     model.to(DEVICE)
     model.eval()
 
-    print("\n✅ Modello caricato in FastAPI\n")
+    print("✅ Modello caricato in FastAPI")
 
     return model

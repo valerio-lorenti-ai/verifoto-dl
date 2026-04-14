@@ -3,6 +3,14 @@ from pydantic import BaseModel
 
 class HealthResponse(BaseModel):
     status: str
+    model_loaded: bool
+
+
+class ModelInfoResponse(BaseModel):
+    service_name: str
+    model_version: str
+    threshold: float
+    status: str
 
 
 class PredictionResponse(BaseModel):
@@ -16,4 +24,3 @@ class PredictionResponse(BaseModel):
     threshold: float
     decision: str
     inference_time_ms: float
-    
