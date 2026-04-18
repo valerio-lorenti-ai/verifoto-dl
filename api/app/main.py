@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security.api_key import APIKeyHeader
 
 from app import settings
-from app.inference import predict_image, model_loaded
+from app.inference import predict_image, model_loaded, _get_model
 from app.schemas import HealthResponse, ModelInfoResponse, PredictionResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -120,6 +120,17 @@ async def _value_error_handler(request: Request, exc: ValueError):
 async def _generic_error_handler(request: Request, exc: Exception):
     logger.error("Unhandled exception: %s", exc, exc_info=True)
     raise HTTPException(status_code=500, detail="Errore interno del server")
+
+
+# ---------------------------------------------------------------------------
+# Startup — preload model so the first /predict request is never charged
+# the cold-start cost inside the 5 s inference timeout window.
+# ---------------------------------------------------------------------------
+@app.on_event("startup")
+async def _preload_model():
+    logger.info("Precaricamento modello all'avvio...")
+    _get_model()
+    logger.info("Modello pronto — server operativo")
 
 
 # ---------------------------------------------------------------------------
