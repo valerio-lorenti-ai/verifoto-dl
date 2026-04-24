@@ -1,10 +1,9 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-
 fastapi
 uvicorn[standard]
-torch
-torchvision
-timm
 pillow
 python-multipart
 gdown
+pytest
+httpx
+pytest-asyncio
+python-dotenv
