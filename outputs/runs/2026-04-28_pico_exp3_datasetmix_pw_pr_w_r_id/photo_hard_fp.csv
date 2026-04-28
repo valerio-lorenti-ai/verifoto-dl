@@ -1,0 +1,2 @@
+photo_id,y_true,y_prob,y_pred,source,quality,food_category,defect_type,generator,prob_mean,prob_std,prob_min,prob_max,n_versions
+ds5_,0,0.6498113293707865,1,originali,ds5__raw_vale_id__originali__buono__pasta__000231.jpg,ds5__raw_vale_id__modificate__carne__bruciato__gpt_image_1_mini__000325.jpg,,,0.6498113293707865,0.4387104580760162,0.006778914,0.9986332,178
