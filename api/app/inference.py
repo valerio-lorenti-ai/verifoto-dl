@@ -5,6 +5,8 @@ import torch
 from PIL import Image
 from torchvision import transforms
 
+logger = logging.getLogger(__name__)
+
 from app.model_loader import load_model
 from app import settings
 
@@ -58,24 +60,48 @@ def _get_model():
     return _model
 
 
-def predict_image(image_bytes: bytes, timeout_seconds: float = 5.0):
-    start_time = time.time()
+def predict_image(image_bytes: bytes):
+    """
+    Esegue preprocessing e inferenza sull'immagine.
 
+    Nessun timeout interno: il tempo di inferenza su CPU può variare tra 5 e 15 secondi.
+    Il timeout reale è gestito a livello di client HTTP (Supabase Edge Function)
+    e dal proxy Railway (default 300 s).
+    """
+    t_start = time.perf_counter()
+
+    # --- Preprocessing ---
     try:
         image = Image.open(BytesIO(image_bytes)).convert("RGB")
     except Exception:
         raise ValueError("Impossibile leggere l'immagine")
 
-    model = _get_model()
+    t_after_open = time.perf_counter()
     x = transform(image).unsqueeze(0)
+    t_after_preprocess = time.perf_counter()
+
+    preprocess_ms = round((t_after_preprocess - t_start) * 1000, 1)
+    logger.info("predict | preprocessing=%.1fms (open=%.1fms, transform=%.1fms)",
+                preprocess_ms,
+                (t_after_open - t_start) * 1000,
+                (t_after_preprocess - t_after_open) * 1000)
+
+    # --- Inferenza ---
+    model = _get_model()
+    t_before_infer = time.perf_counter()
 
     with torch.no_grad():
         logit = model(x).squeeze(1)
         score = torch.sigmoid(logit).item()
 
-    if time.time() - start_time > timeout_seconds:
-        raise TimeoutError("Inference timeout")
+    t_after_infer = time.perf_counter()
+    inference_ms = round((t_after_infer - t_before_infer) * 1000, 1)
+    total_ms = round((t_after_infer - t_start) * 1000, 1)
 
+    logger.info("predict | inference=%.1fms  total=%.1fms  score=%.4f",
+                inference_ms, total_ms, score)
+
+    # --- Classificazione ---
     predicted_class = "manipulated" if score >= settings.THRESHOLD else "real"
 
     if score >= 0.75 or score <= 0.15:
@@ -92,7 +118,6 @@ def predict_image(image_bytes: bytes, timeout_seconds: float = 5.0):
     else:
         decision = "uncertain"
 
-    inference_time_ms = round((time.time() - start_time) * 1000, 2)
     return (
         predicted_class,
         round(score, 4),
@@ -100,5 +125,5 @@ def predict_image(image_bytes: bytes, timeout_seconds: float = 5.0):
         settings.MODEL_VERSION,
         settings.THRESHOLD,
         decision,
-        inference_time_ms,
+        total_ms,
     )
