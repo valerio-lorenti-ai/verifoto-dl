@@ -1,7 +1,5 @@
 FROM python:3.11-slim
 
-ARG MODEL_URL
-
 WORKDIR /app
 
 COPY requirements.txt .
@@ -10,10 +8,11 @@ RUN pip install --no-cache-dir torch==2.3.1 torchvision==0.18.1 --index-url http
 RUN pip install --no-cache-dir timm==1.0.26 --no-deps
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN mkdir -p weights && \
-    gdown "$MODEL_URL" -O weights/best.pt
+# Create the weights directory so the app can write the model file at startup
+RUN mkdir -p weights
 
 COPY app ./app
+COPY download_model.py .
 
 EXPOSE 8000
 

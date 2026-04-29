@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 pillow
 python-multipart
-gdown
+boto3
 pytest
 httpx
 pytest-asyncio
