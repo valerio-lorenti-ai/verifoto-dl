@@ -179,12 +179,13 @@ async def predict(file: UploadFile = File(...), request_id: str = None):
 
     try:
         predicted_class, score, confidence_level, model_version, threshold, decision, inference_time_ms = predict_image(image_bytes)
-    except TimeoutError:
-        raise HTTPException(status_code=504, detail="Inference timeout")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    logger.info("predict | decision=%s score=%.4f time=%.1fms", decision, score, inference_time_ms)
+    logger.info(
+        "predict | request_id=%s decision=%s score=%.4f confidence=%s total_ms=%.1f",
+        request_id or "n/a", decision, score, confidence_level, inference_time_ms,
+    )
 
     return {
         "status": "success",
