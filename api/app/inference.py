@@ -1,4 +1,5 @@
 from io import BytesIO
+import logging
 import time
 import torch
 from PIL import Image
@@ -6,6 +7,22 @@ from torchvision import transforms
 
 from app.model_loader import load_model
 from app import settings
+
+# ---------------------------------------------------------------------------
+# Download model weights from R2 before anything else.
+# This runs once at module import time (which happens at server startup).
+# If the file already exists locally the function returns immediately.
+# ---------------------------------------------------------------------------
+try:
+    # When running from inside api/ (Docker: WORKDIR /app, uvicorn app.main:app)
+    from download_model import download_model_if_missing
+except ModuleNotFoundError:
+    # When running from the repo root (e.g. pytest from project root)
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from download_model import download_model_if_missing
+
+download_model_if_missing()
 
 # ---------------------------------------------------------------------------
 # Lazy model loading
