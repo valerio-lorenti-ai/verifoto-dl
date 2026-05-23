@@ -24,7 +24,15 @@ except ModuleNotFoundError:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
     from download_model import download_model_if_missing
 
-download_model_if_missing()
+try:
+    download_model_if_missing()
+except Exception as _download_exc:
+    logger.critical(
+        "Impossibile scaricare il modello all'avvio: %s — il server non può partire.",
+        _download_exc,
+        exc_info=True,
+    )
+    raise
 
 # ---------------------------------------------------------------------------
 # Lazy model loading
@@ -53,10 +61,20 @@ def _get_model():
     """Return the model, loading it on first call (thread-safe via GIL for CPython)."""
     global _model, model_loaded
     if _model is None:
-        print("🚀 Caricamento modello...")
-        _model = load_model()
+        logger.info("Inizio caricamento modello in memoria...")
+        t0 = time.perf_counter()
+        try:
+            _model = load_model()
+        except Exception as exc:
+            logger.critical(
+                "Caricamento modello FALLITO: %s — il server non può servire richieste.",
+                exc,
+                exc_info=True,
+            )
+            raise
+        elapsed = round(time.perf_counter() - t0, 1)
         model_loaded = True
-        print("✅ Modello caricato")
+        logger.info("Modello pronto in %.1fs.", elapsed)
     return _model
 
 
