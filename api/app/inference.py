@@ -57,6 +57,11 @@ transform = transforms.Compose([
 ])
 
 
+def is_model_ready() -> bool:
+    """Fonte di verità unica: il modello è pronto se _model è stato caricato."""
+    return _model is not None
+
+
 def _get_model():
     """Return the model, loading it on first call (thread-safe via GIL for CPython)."""
     global _model, model_loaded

@@ -139,7 +139,9 @@ async def _preload_model():
 # ---------------------------------------------------------------------------
 @app.get("/health", response_model=HealthResponse)
 def health():
-    return {"status": "ok", "model_loaded": _inference.model_loaded}
+    ready = _inference.is_model_ready()
+    logger.debug("health check | model_ready=%s _model_is_none=%s", ready, _inference._model is None)
+    return {"status": "ok", "model_loaded": ready}
 
 
 @app.get("/model-info", response_model=ModelInfoResponse, dependencies=[Security(require_api_key)])
