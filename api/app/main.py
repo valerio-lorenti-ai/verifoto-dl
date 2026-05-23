@@ -9,7 +9,8 @@ from fastapi.responses import JSONResponse
 from fastapi.security.api_key import APIKeyHeader
 
 from app import settings
-from app.inference import predict_image, model_loaded, _get_model
+from app.inference import predict_image, _get_model
+from app import inference as _inference
 from app.schemas import HealthResponse, ModelInfoResponse, PredictionResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -138,7 +139,7 @@ async def _preload_model():
 # ---------------------------------------------------------------------------
 @app.get("/health", response_model=HealthResponse)
 def health():
-    return {"status": "ok", "model_loaded": model_loaded}
+    return {"status": "ok", "model_loaded": _inference.model_loaded}
 
 
 @app.get("/model-info", response_model=ModelInfoResponse, dependencies=[Security(require_api_key)])
